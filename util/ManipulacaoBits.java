@@ -54,8 +54,9 @@ public class ManipulacaoBits {
    *                   original pode nao ocupar o ultimo int por completo)
    * @return A String resultante
    */
-  public static String intAgrupadoParaString(int[] pacoteBits, int totalBits) {
+  public static String intAgrupadoParaString(int[] pacoteBits) {
 
+    int totalBits = descobrirTotalDeBitsReais(pacoteBits); // descobre o total de bits validos no array
     int totalChar = totalBits / 8; // calcula o total de caracteres uma vez que cada char sao 8 bits
     char[] charMensagem = new char[totalChar]; // cria o array de chars para mensagem
 

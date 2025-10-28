@@ -1,28 +1,59 @@
 package model;
 
 import controller.ControlerTelaPrincipal;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import util.ManipulacaoBits;
 
 public class CamadaEnlaceDadosReceptora {
 
+  private CamadaAplicacaoReceptora camadaAplicacaoReceptora;
+  private ControlerTelaPrincipal controlerTelaPrincipal;
+
   /**
-   * construtor, responsavel por desenquadrar os quadros recebidos e decodificados
-   * da camada fisica e enviar para a proxima camada
+   * construtor da classe
    * 
-   * @param quadro quadro recebido da camada anterior
+   * @param camadaAplicacaoReceptora referencia para a camada de aplicacao
+   *                                 receptora
+   * @param controlerTelaPrincipal   referencia para a interface grafica
    */
-  public CamadaEnlaceDadosReceptora(int quadro[]) {
+  public CamadaEnlaceDadosReceptora(CamadaAplicacaoReceptora camadaAplicacaoReceptora,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.camadaAplicacaoReceptora = camadaAplicacaoReceptora;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+  } // fim do construtor
 
-    int[] quadroDesenquadrado, quadroVerificado;
+  public void receberQuadro(int[] quadro) {
 
-    quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadro);
-    quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadroDesenquadrado);
-    // CamadaEnlaceDadosReceptoraControleDeFluxo(quadro);
+    int[] quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadro); // desenquadra o quadro
 
-    // chama proxima camada
+    int[] quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadroDesenquadrado); // verifica erros no
+                                                                                            // quadro
 
-    new CamadaAplicacaoReceptora(quadroVerificado);
-  }// fim do metodo CamadaEnlaceDadosReceptora
+    CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o fluxo de dados
+
+    if (quadroVerificado != null) { // quadro verificado sera nulo somente quando for detectado erro, pois sera
+                                    // descartado
+      System.out.println("Camada Enlace Receptora: Quadro valido. Enviando para a Aplicacao.");
+      // chama proxima camada
+      this.camadaAplicacaoReceptora.receberQuadro(quadroVerificado);
+    } else {
+      // Se o quadro for invalido descarta
+      System.out.println("Camada Enlace Receptora: ERRO DETECTADO. Quadro descartado.");
+
+      // informar o usuario, da deteccao de erros
+      Platform.runLater(() -> {
+        Alert alert = new Alert(AlertType.WARNING);
+        alert.setTitle("Deteccao de Erro");
+        alert.setHeaderText("QUADRO CORROMPIDO!");
+        alert.setContentText("A Camada de Enlace Receptora detectou um erro no quadro recebido e o descartou.");
+        alert.showAndWait();
+      });
+    } // fim if/else
+
+    //this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o quadro para a proxima camada
+  } // fim do metodo receberQuadro
 
   /**
    * metodo que escolhe o tipo de desenquadramento a ser aplicado na mensagem
@@ -31,8 +62,8 @@ public class CamadaEnlaceDadosReceptora {
    * @return o quadro ja desenquadrado
    */
   public int[] CamadaEnlaceDadosReceptoraEnquadramento(int quadro[]) {
-    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
-    int[] quadroDesenquadrado = null;
+    int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
+    int[] quadroDesenquadrado = quadro;
     switch (tipoDeEnquadramento) {
       case 0: // contagem de caracteres
         quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramentoContagemDeCaracteres(quadro);
@@ -53,7 +84,7 @@ public class CamadaEnlaceDadosReceptora {
   }// fim do metodo CamadaEnlaceDadosReceptoraEnquadramento
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErro(int quadro[]) {
-    int tipoDeControleDeErro = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoControleErroSelecionada();
+    int tipoDeControleDeErro = this.controlerTelaPrincipal.opcaoControleErroSelecionada();
     int[] quadroVerificado = null;
     switch (tipoDeControleDeErro) {
       case 0: // paridade par
@@ -320,8 +351,43 @@ public class CamadaEnlaceDadosReceptora {
   } // fim CamadaEnlaceDadosReceptoraEnquadramentoViolacaoDaCamadaFisica
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+    if (totalBits == 0)
+      return new int[0]; // retorna quadro vazio se nao houver bits reais
+
+    int contadorDeUns = 0;
+    for (int i = 0; i < totalBits - 1; i++) { // -1 para ignorar o bit de paridade
+      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
+      if (bit == 1) {
+        contadorDeUns++;
+      } // fim if
+    } // fim for
+
+    // para a paridade par, a contagem total de uns deve ser par
+    boolean paridadeCorreta = (contadorDeUns % 2 == 0); // da true se for par
+
+    // debug
+    System.out.println(
+        "Controle de Erro (Par) - Receptor: " + contadorDeUns + " bits '1' encontrados. Esta correto? "
+            + paridadeCorreta);
+
+    if (!paridadeCorreta) {
+      return null; // retorna nulo se detectar erro
+    } // fim if
+
+    // se esta correto a paridade, remove o bit de controle de erro adicionado
+    int totalBitsCargaUtil = totalBits - 1;
+    int tamanhoCargaUtil = (totalBitsCargaUtil + 31) / 32; // arredondamento de seguranca para evitar perca de dados
+    int[] quadroVerificado = new int[tamanhoCargaUtil];
+
+    // Copia todos os bits, EXCETO o ultimo
+    for (int i = 0; i < totalBitsCargaUtil; i++) {
+      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroVerificado, i, bit, 1);
+    } // fim do for
+
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {

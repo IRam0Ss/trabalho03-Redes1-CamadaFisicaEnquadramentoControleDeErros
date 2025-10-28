@@ -10,16 +10,12 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
-import model.AplicacaoTransmissora;
 import util.ManipulacaoBits;
 
 /**
  * Classe responsavel por controlar os elementos visuais do javaFX
  */
 public class ControlerTelaPrincipal {
-
-  public static ControlerTelaPrincipal controlerTelaPrincipal; // a variavel static que representa o controle para nao
-                                                               // precisar passar ele por parametro
 
   @FXML
   private Button butaoTransmitir;
@@ -61,11 +57,10 @@ public class ControlerTelaPrincipal {
 
   private AnimationTimer animacao; // o controle do loop da animacao
 
+  private ControleRede controleRede; // o controlador da rede
+
   @FXML
   public void initialize() {
-
-    controlerTelaPrincipal = this; // instancia inicialmente a variavel responsavel por ser o controlador
-
     // Adiciona a choiceBox as opcoes de escolha e inicializa por padrao como
     // binario
     opcoesTransmissao.getItems().addAll("Binario", "Manchester", "Manchester Diferencial");
@@ -90,17 +85,25 @@ public class ControlerTelaPrincipal {
     gc = quadroAnimacaoTransmissao.getGraphicsContext2D(); // "assossia" o nosso "pincel" a tela onde a animacao vai
                                                            // surgir
 
-  }
+    this.controleRede = new ControleRede(this); // cria o controlador da rede e passa a referencia desta tela para ele
+
+  } // fim initialize
 
   /**
    * metodo que inicia a simulacoa ao pressinor de um botao
-   * * @param pressionarBotaoTransmitir condicao de disparada do metodo,
-   * pressionar
-   * o botao transmitir!
+   * 
+   * @param pressionarBotaoTransmitir condicao de disparada do metodo,
+   *                                  pressionar
+   *                                  o botao transmitir!
    */
   public void realizarSimulacaoTransmissao(ActionEvent pressionarBotaoTransmitir) {
     if (!caixaTextoTransmitido.getText().isEmpty()) {
-      new AplicacaoTransmissora(); // inicia a logica de simulacao por camadas
+
+      String mensagem = getCaixaTextoTransmitido(); // coleta a mensagem digitada pelo usuario
+
+      limparInterface();
+
+      this.controleRede.iniciarSimulacao(mensagem); // inicia a simulacao de transmissao
     } else {
       System.out.println("DIGITE UM TEXTO A SER TRANSMITIDO");
     }
@@ -109,7 +112,8 @@ public class ControlerTelaPrincipal {
 
   /**
    * realiza a animacao da onda quadrada para simular a transmissao de bits
-   * * @param fluxoBitsTransmitido bits a serem transmitidos
+   * 
+   * @param fluxoBitsTransmitido bits a serem transmitidos
    */
   public void desenharSinalTransmissao(int[] fluxoBitsTransmitido) {
     // finalizar possiveis animacoes anteriores antes de comecar
@@ -223,7 +227,8 @@ public class ControlerTelaPrincipal {
   /**
    * metodo responsavel por detectar qual opcao esta sendo selecionada na choice
    * box e a "converter" para um inteiro.
-   * * @return um inteiro equivalente a opcao selecionada
+   * 
+   * @return um inteiro equivalente a opcao selecionada
    */
   public int opcaoSelecionada() {
     String opcaoChoiceBox = opcoesTransmissao.getValue();
@@ -251,7 +256,8 @@ public class ControlerTelaPrincipal {
   /**
    * metodo responsavel por detectar qual opcao de enquadramento esta sendo
    * selecionada na choice box e a "converter" para um inteiro.
-   * * @return um inteiro equivalente a opcao selecionada
+   * 
+   * @return um inteiro equivalente a opcao selecionada
    */
   public int opcaoEnquadramentoSelecionada() {
     String opcaoChoiceBox = opcaoEnquadramento.getValue();
@@ -282,7 +288,8 @@ public class ControlerTelaPrincipal {
   /**
    * metodo responsavel por detectar qual opcao de controle de erro esta sendo
    * selecionada na choice box e a "converter" para um inteiro.
-   * * @return um inteiro equivalente a opcao selecionada
+   * 
+   * @return um inteiro equivalente a opcao selecionada
    */
   public int opcaoControleErroSelecionada() {
     String opcaoChoiceBox = opcaoControleErro.getValue();
@@ -312,7 +319,8 @@ public class ControlerTelaPrincipal {
 
   /**
    * metodo para coletar a informacao de qual texto que deseja se transmitir
-   * * @return uma string com o texto digitado pelo usuario
+   * 
+   * @return uma string com o texto digitado pelo usuario
    */
   public String getCaixaTextoTransmitido() {
     return caixaTextoTransmitido.getText();
@@ -320,15 +328,21 @@ public class ControlerTelaPrincipal {
 
   /**
    * mostra na caixa reservada qual foi a mensagem recebida pos transferencia
-   * * @param mensagemRecebida a string que sera exibida
+   * 
+   * @param mensagemRecebida a string que sera exibida
    */
   public void exibirMensagemRecebida(String mensagemRecebida) {
-    caixaTextoRecebido.setText(mensagemRecebida);
-  }
+
+    if (!caixaTextoRecebido.getText().equals(mensagemRecebida)) {
+      caixaTextoRecebido.appendText(mensagemRecebida);
+    }
+
+  }// fim mensagem recebida
 
   /**
    * coleta a informacao de qual a opcao que esta selecionada na choice box
-   * * @return a string que define qual das 3 opcoes de codificacao
+   * 
+   * @return a string que define qual das 3 opcoes de codificacao
    */
   public String getOpcaoTransmissao() {
     return opcoesTransmissao.getValue();
@@ -357,8 +371,9 @@ public class ControlerTelaPrincipal {
   /**
    * exibe na caixa de texto reservada a representacao de como o sinal pos
    * codificacao eh enviado
-   * * @param representSinal array com a mensagem codificada que representa o
-   * sinal
+   * 
+   * @param representSinal array com a mensagem codificada que representa o
+   *                       sinal
    */
   public void exibirRepresentSinalTransmitido(int[] representSinal) {
 
@@ -369,8 +384,9 @@ public class ControlerTelaPrincipal {
   /**
    * exibe na caixa de texto reservada a representacao de como o sinal pos
    * codificacao eh recebido
-   * * @param representSinal array com a mensagem codificada que representa o
-   * sinal
+   * 
+   * @param representSinal array com a mensagem codificada que representa o
+   *                       sinal
    */
   public void exibirRepresentSinalRecebido(int[] representSinal) {
 
@@ -384,7 +400,8 @@ public class ControlerTelaPrincipal {
 
   /**
    * retorna o valor em double da taxa de erro selecionada
-   * * @return valor double da taxa de erro
+   * 
+   * @return valor double da taxa de erro
    */
   public double getValorTaxaErro() {
     String valorSelecionado = opcaoTaxaErro.getValue();
@@ -403,5 +420,16 @@ public class ControlerTelaPrincipal {
       return 0.0; // retorna 0 em caso de erro na conversao
     } // fim try
   } // fim getValorTaxaErro
+
+  /**
+   * metodo que limpa a interface a cada nova transmissao
+   */
+  public void limparInterface() {
+    caixaTextoRecebido.clear();
+    representMensagemBinariaRecebida.clear();
+    representMensagemBinariaTransmitida.clear();
+    representSinalRecebido.clear();
+    representSinalTransmitido.clear();
+  } // fim limparInterface
 
 }// fim da classe

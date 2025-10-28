@@ -9,23 +9,32 @@ import util.ManipulacaoBits;
  */
 public class CamadaAplicacaoTransmissora {
 
-  public CamadaAplicacaoTransmissora() {
-  } 
+  private CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora;
+  private ControlerTelaPrincipal controlerTelaPrincipal;
 
   /**
-   * trabalhando com construtor da classe, esssa classe eh responsavel por
-   * realizar a conversao inicial, de String para um array de int
+   * construtor da classe
    * 
-   * @param mensagem o texto digitado pelo usuario, recebido da camada anterio,
-   *                 que sera convertido em int[] e enviado para a proxima camada
+   * @param camadaEnlaceDadosTransmissora referencia para a proxima camada
+   * @param controlerTelaPrincipal        referencia para comunicacao com
+   *                                      interface
    */
-  public CamadaAplicacaoTransmissora(String mensagem) {
+  public CamadaAplicacaoTransmissora(CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.camadaEnlaceDadosTransmissora = camadaEnlaceDadosTransmissora;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+  } // fim do construtor
 
-    int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem para binario
+  /**
+   * metodo responsavel por transmitir a mensagem para a proxima camada
+   * 
+   * @param mensagem mensagem tranmitida
+   */
+  public void transmitirMensagem(String mensagem) {
+    int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem para array de int
+    this.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro);
 
-    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro); // mostra o binario na tela 
-
-    new CamadaEnlaceDadosTransmissora(quadro); // envia para a proxima camada a mensagem convertida para binario 
-  } // fim do construtor 
+    this.camadaEnlaceDadosTransmissora.transmitirQuadro(quadro); // envia o quadro para a proxima camada
+  }// fim do metodo transmitirMensagem
 
 } // fim da classe CamadaAplicacaoTransmissora

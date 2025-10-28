@@ -9,28 +9,56 @@ import util.ManipulacaoBits;
  */
 public class CamadaEnlaceDadosTransmissora {
 
+  private CamadaFisicaTransmissora camadaFisicaTransmissora;
+  private ControlerTelaPrincipal controlerTelaPrincipal;
+
   /**
-   * construtor da classe responsavel por aplicar o enquadramento, controle de
-   * erro e controle de fluxo na mensagem recebida da camada anterior e chamar a
-   * proxima camada
+   * construtor da classe
    * 
-   * @param quadro mensagem na forma binaria, o array de int, ja com os bits
-   *               armazenados recebido da camada anterior
+   * @param camadaFisicaTransmissora camada imediatamente abaixo
+   * @param controlerTelaPrincipal   contorle da interface
    */
-  public CamadaEnlaceDadosTransmissora(int quadro[]) {
+  public CamadaEnlaceDadosTransmissora(CamadaFisicaTransmissora camadaFisicaTransmissora,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.camadaFisicaTransmissora = camadaFisicaTransmissora;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+  } // fim contrutor
 
-    int[] quadroEnquadrado, quadroComControleDeErro;
+  public void transmitirQuadro(int[] quadro) {
 
-    // chama os metodos de cada subcamada
+    // debug
+    System.out.println("Camada de Enlace TX: Recebi " + quadro.length + " inteiros para transmitir.");
 
-    quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(quadro);
-    quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
-    // CamadaEnlaceDadosTransmissoraControleDeFluxo(quadro);
+    // trata cada int ou seja cada 32bits de carga util como sendo um subquadro
+    for (int i = 0; i < quadro.length; i++) {
 
-    // chama proxima camada passando o quadro ja enquadrado
-    new CamadaFisicaTransmissora(quadroComControleDeErro);
+      // verifica se o 'int' contem dados validos antes de processar
+      int totalBitsNoInt = ManipulacaoBits.descobrirTotalDeBitsReais(new int[] { quadro[i] });
+      if (totalBitsNoInt == 0) {
+        continue; // pular 'ints' de padding (vazios)
+      } // fim if
 
-  }// fim do metodo CamadaEnlaceDadosTransmissora
+      int[] subQuadro = new int[] { quadro[i] }; // o subquadro eh de 1 int ou seja, ate 32 bits de carga util
+
+      // debug
+      System.out.println("Enlace TX: Processando sub-quadro " + i);
+
+      // aplica enquadramento no subquadro.
+      int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(subQuadro);
+
+      // aplica controle de erro
+      int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
+
+      // 3. APLICA CONTROLE DE FLUXO (Stub de Teste)
+      // Este metodo, por agora, apenas envia para a proxima camada.
+      // Ele NAO espera pelo ACK, permitindo testar o fluxo.
+      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroComControleDeErro);
+
+    } // fim for
+
+    System.out.println("Camada de Enlace TX: Todos os sub-quadros foram disparados.");
+
+  }// fim e transmitirQuadro
 
   /**
    * metodo que escolhe o tipo de enquadramento a ser aplicado na mensagem
@@ -41,7 +69,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   public int[] CamadaEnlaceDadosTransmissoraEnquadramento(int quadro[]) {
 
-    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
+    int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
     int quadroEnquadrado[] = null;
     switch (tipoDeEnquadramento) {
       case 0: // contagem de caracteres
@@ -75,7 +103,7 @@ public class CamadaEnlaceDadosTransmissora {
    */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErro(int quadro[]) {
 
-    int tipoDeControleDeErro = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoControleErroSelecionada();
+    int tipoDeControleDeErro = this.controlerTelaPrincipal.opcaoControleErroSelecionada();
     int quadroComControleDeErro[] = null;
     switch (tipoDeControleDeErro) {
       case 0: // paridade par
@@ -97,7 +125,8 @@ public class CamadaEnlaceDadosTransmissora {
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErro
 
   public void CamadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[]) {
-    // algum codigo aqui
+    System.out.println("Enlace TX (Controle de Fluxo): Enviando quadro para a Camada Fisica.");
+    this.camadaFisicaTransmissora.transmitirQuadro(quadro);
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeFluxo
 
   /**
@@ -422,8 +451,38 @@ public class CamadaEnlaceDadosTransmissora {
   }// fim metodo CamadaEnlaceDadosTransmissoraEnquadramentoViolacaoDeCamadaFisica
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+    if (totalBits == 0)
+      return quadro; // Nao adiciona paridade a quadros vazios
+
+    int contagemBitsUm = 0;
+    // percorre o quadro e conta o numero de bits 1
+    for (int i = 0; i < totalBits; i++) {
+      if (ManipulacaoBits.lerBits(quadro, i, 1) == 1) {
+        contagemBitsUm++;
+      } // fim if
+    } // fim for
+
+    // se os bits 1 forem par entao adiciona 0 se for impar adiciona 1 para garantir
+    // a paridade
+    int bitParidade = (contagemBitsUm % 2 == 0) ? 0 : 1;
+
+    int novoTotalBits = totalBits + 1;
+    int novoTamanhoArray = (novoTotalBits + 31) / 32; // arredondamento de seguranca
+    int[] quadroComParidade = new int[novoTamanhoArray];
+
+    for (int i = 0; i < totalBits; i++) {
+      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroComParidade, i, bit, 1);
+    } // fim do for
+
+    ManipulacaoBits.escreverBits(quadroComParidade, totalBits, bitParidade, 1);
+
+    // debug
+    System.out
+        .println("Controle de Erro (Par): " + contagemBitsUm + " bits '1'. Bit de paridade anexado: " + bitParidade);
+
+    return quadroComParidade;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar(int quadro[]) {

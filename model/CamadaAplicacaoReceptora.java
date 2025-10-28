@@ -10,23 +10,29 @@ import util.ManipulacaoBits;
  */
 public class CamadaAplicacaoReceptora {
 
+  private AplicacaoReceptora aplicacaoReceptora;
+  private ControlerTelaPrincipal controlerTelaPrincipal;
+
   /**
-   * construtor da classe responsavel por converter a mensagem em binario de volta
-   * para string
+   * construtor da classe
    * 
-   * @param quadro a mensagem recebida decodificada pela camada fisica, na forma
-   *               de binario
+   * @param aplicacaoReceptora     a aplicacao receptora que ira receber a
+   *                               mensagem convertida
+   * @param controlerTelaPrincipal a interface grafica para atualizacoes
    */
-  public CamadaAplicacaoReceptora(int[] quadro) {
+  public CamadaAplicacaoReceptora(AplicacaoReceptora aplicacaoReceptora,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.aplicacaoReceptora = aplicacaoReceptora;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+  } // fim do construtor
 
-    // exibe a representacao binaria recebida na tela
-    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentMensagemBinariaRecebida(quadro); 
+  public void receberQuadro(int[] quadro) {
 
-    String mensagem = ManipulacaoBits.intAgrupadoParaString(quadro, (32 * quadro.length)); // traduz o binario de volta
-                                                                                           // para String
+    this.controlerTelaPrincipal.exibirRepresentMensagemBinariaRecebida(quadro); // mostra o binario na tela
 
-    new AplicacaoReceptora(mensagem);
-
-  }// fim construtor
+    String mensagem = ManipulacaoBits.intAgrupadoParaString(quadro); // converte o array de int
+                                                                                           // para string
+    this.aplicacaoReceptora.receberMensagem(mensagem);
+  } // fim do metodo receberQuadro
 
 } // fim da classe

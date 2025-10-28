@@ -10,28 +10,46 @@ import java.util.Random;
  */
 public class MeioDeComunicacao {
 
+  // referncias para os dois lados da comunicacao
+  private CamadaFisicaReceptora receptor;
+  private CamadaFisicaTransmissora transmissor;
+  private ControlerTelaPrincipal controlerTelaPrincipal;
+  private Random random;
+
   /**
-   * contrutor da classe responsavel por simular a transferecia bit a bit e o erro
+   * construtor da classe
+   * 
+   * @param transmissor referencia para o transmissor da mensagem
+   * @param receptor    referencia para o receptor da mensagem
+   */
+  public MeioDeComunicacao(CamadaFisicaTransmissora transmissor, CamadaFisicaReceptora receptor,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.transmissor = transmissor;
+    this.receptor = receptor;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+    this.random = new Random();
+  } // fim construtor
+
+  /**
+   * metodo principal que simula a transmissao da mensagem
    * 
    * @param fluxoBrutoDeBits fluxoBruto de bits que represneta o sinal
    *                         codificado
    *                         pela camada anterior
    */
-  public MeioDeComunicacao(int fluxoBrutoDeBits[]) {
+  public void transmitirMensagem(int fluxoBrutoDeBits[]) {
 
-    ControlerTelaPrincipal controller = ControlerTelaPrincipal.controlerTelaPrincipal;
-    double taxaErro = controller.getValorTaxaErro();
-    Random random = new Random();
+    double taxaErro = this.controlerTelaPrincipal.getValorTaxaErro();
 
     int[] fluxoBrutoDeBitsPontoA = fluxoBrutoDeBits;
     int[] fluxoBrutoDeBitsPontoB = new int[fluxoBrutoDeBitsPontoA.length]; // array de destino tem o mesmo tamanho do
                                                                            // array partida
 
     int totalDeBits = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoA);
-    int tipoDeEnquadramento = controller.opcaoEnquadramentoSelecionada();
-    int tipoDeCodificacao = controller.opcaoSelecionada();
+    int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
+    int tipoDeCodificacao = this.controlerTelaPrincipal.opcaoSelecionada();
 
-    // um strigBuider pra construir o relatorio de erro
+    // um strigBuider pra construir o relatorio de erro (debug)
     StringBuilder relatorio = new StringBuilder();
     relatorio.append("Taxa de Erro configurada: ").append(String.format("%.1f%%", taxaErro * 100))
         .append(" por quadro.\n");
@@ -79,9 +97,9 @@ public class MeioDeComunicacao {
           // Garante que o erro nao caia fora do total de bits
           if (posicaoDoErroNesteQuadro >= totalDeBits) {
             posicaoDoErroNesteQuadro = totalDeBits - 1;
-          }
-        }
-      }
+          } // fim if
+        } // fim if
+      } // fim if
 
       // le o bit do A
       int bit = ManipulacaoBits.lerBits(fluxoBrutoDeBitsPontoA, i, 1);
@@ -93,7 +111,7 @@ public class MeioDeComunicacao {
 
         contadorDeErros++;
         relatorio.append("-> Erro inserido no bit de índice: ").append(i).append("\n");
-      }
+      } // fim if
 
       // escreve o bit no B
       ManipulacaoBits.escreverBits(fluxoBrutoDeBitsPontoB, i, bit, 1);
@@ -106,8 +124,9 @@ public class MeioDeComunicacao {
     System.out.println("--- RELATORIO DO MEIO DE COMUNICACAO (DEBUG) ---");
     System.out.println(relatorio.toString());
 
-    controller.desenharSinalTransmissao(ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoA, totalDeBits));
-    new CamadaFisicaReceptora(fluxoBrutoDeBitsPontoB);
+    this.controlerTelaPrincipal
+        .desenharSinalTransmissao(ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoA, totalDeBits));
+    this.receptor.receberQuadro(fluxoBrutoDeBitsPontoB);
   } // fim do MeioComunicacao
 
 } // fim da classe
