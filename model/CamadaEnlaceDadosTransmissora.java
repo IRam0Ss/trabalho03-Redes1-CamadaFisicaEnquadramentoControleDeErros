@@ -19,15 +19,16 @@ public class CamadaEnlaceDadosTransmissora {
    */
   public CamadaEnlaceDadosTransmissora(int quadro[]) {
 
-    int[] quadroEnquadrado;
+    int[] quadroEnquadrado, quadroComControleDeErro;
 
     // chama os metodos de cada subcamada
+
     quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(quadro);
-    // CamadaEnlaceDadosTransmissoraControleDeErro(quadro);
+    quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
     // CamadaEnlaceDadosTransmissoraControleDeFluxo(quadro);
 
     // chama proxima camada passando o quadro ja enquadrado
-    new CamadaFisicaTransmissora(quadroEnquadrado);
+    new CamadaFisicaTransmissora(quadroComControleDeErro);
 
   }// fim do metodo CamadaEnlaceDadosTransmissora
 
@@ -57,12 +58,42 @@ public class CamadaEnlaceDadosTransmissora {
         break;
     }// fim do switch/case
 
+    // fazer aqui a mensagem unica ja enquadrada em um unico vetor(o
+    // quadroEnquadrado), se tornar um vetor de vetores, onde cada vetor corresponde
+    // a um quadro enquadrado
+    // int[][] quadrosEnquadrados = separarEmQuadros(quadroEnquadrado);
+
     return quadroEnquadrado; // retorna o quadro ja enquadrado
 
   }// fim do metodo CamadaEnlaceDadosTransmissoraEnquadramentos
 
-  public void CamadaEnlaceDadosTransmissoraControleDeErro(int quadro[]) {
-    // algum codigo aqui
+  /**
+   * metodo que escolhe o tipo de controle de erro a ser aplicado na mensagem
+   * 
+   * @param quadro mensagem ja com o enquadramento
+   * @return mensagem com o controle de erro aplicado
+   */
+  public int[] CamadaEnlaceDadosTransmissoraControleDeErro(int quadro[]) {
+
+    int tipoDeControleDeErro = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoControleErroSelecionada();
+    int quadroComControleDeErro[] = null;
+    switch (tipoDeControleDeErro) {
+      case 0: // paridade par
+        quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar(quadro);
+        break;
+      case 1: // paridade impar
+        quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar(quadro);
+        break;
+      case 2: // CRC
+        quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErroCRC(quadro);
+        break;
+      case 3: // Hamming
+        quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming(quadro);
+        break;
+    }// fim do switch/case
+
+    return quadroComControleDeErro; // retorna o quadro ja com controle de erro aplicado
+
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErro
 
   public void CamadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[]) {
@@ -389,5 +420,25 @@ public class CamadaEnlaceDadosTransmissora {
     // enquadrar com os sinais de violacao 11, no inicio e no fim
     return quadro;
   }// fim metodo CamadaEnlaceDadosTransmissoraEnquadramentoViolacaoDeCamadaFisica
+
+  public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar
+
+  public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar
+
+  public int[] CamadaEnlaceDadosTransmissoraControleDeErroCRC(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCRC
+
+  public int[] CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming
 
 } // fim da classe

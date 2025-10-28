@@ -21,9 +21,7 @@ public class CamadaAplicacaoTransmissora {
    */
   public CamadaAplicacaoTransmissora(String mensagem) {
 
-    int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem de string para o array de
-                                                                    // inteiros com o tratamente de bits, ou seja cada
-                                                                    // int carrega 32 bits
+    int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem para binario
 
     ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro); // mostra o binario na tela 
 

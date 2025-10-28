@@ -13,10 +13,7 @@ public class AplicacaoTransmissora {
    */
   public AplicacaoTransmissora() {
 
-    if (ControlerTelaPrincipal.controlerTelaPrincipal.getCaixaTextoTransmitido() != null) { // garante que a chamada da
-                                                                                            // proxima camada so ocorra
-                                                                                            // a pos o usurio digitar
-                                                                                            // algo
+    if (ControlerTelaPrincipal.controlerTelaPrincipal.getCaixaTextoTransmitido() != null) {
       String mensagem = ControlerTelaPrincipal.controlerTelaPrincipal.getCaixaTextoTransmitido();
       new CamadaAplicacaoTransmissora(mensagem); // chama a proxima camada
     } else {

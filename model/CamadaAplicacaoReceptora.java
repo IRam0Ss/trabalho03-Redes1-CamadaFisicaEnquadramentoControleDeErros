@@ -10,9 +10,6 @@ import util.ManipulacaoBits;
  */
 public class CamadaAplicacaoReceptora {
 
-  public CamadaAplicacaoReceptora() {
-  }
-
   /**
    * construtor da classe responsavel por converter a mensagem em binario de volta
    * para string
@@ -22,9 +19,8 @@ public class CamadaAplicacaoReceptora {
    */
   public CamadaAplicacaoReceptora(int[] quadro) {
 
-    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentMensagemBinariaRecebida(quadro); // mostra a forma
-                                                                                                  // binaria da mensagem
-                                                                                                  // recebida
+    // exibe a representacao binaria recebida na tela
+    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentMensagemBinariaRecebida(quadro); 
 
     String mensagem = ManipulacaoBits.intAgrupadoParaString(quadro, (32 * quadro.length)); // traduz o binario de volta
                                                                                            // para String

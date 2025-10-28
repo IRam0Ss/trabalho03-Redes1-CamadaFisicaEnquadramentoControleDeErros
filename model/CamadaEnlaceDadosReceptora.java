@@ -13,17 +13,15 @@ public class CamadaEnlaceDadosReceptora {
    */
   public CamadaEnlaceDadosReceptora(int quadro[]) {
 
-    int[] quadroDesenquadrado;
+    int[] quadroDesenquadrado, quadroVerificado;
 
     quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadro);
-
-    // Metodos ainda nao implementados nesse trabalho por isso comentados:
-    // CamadaEnlaceDadosReceptoraControleDeErro(quadro);
+    quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadroDesenquadrado);
     // CamadaEnlaceDadosReceptoraControleDeFluxo(quadro);
 
     // chama proxima camada
 
-    new CamadaAplicacaoReceptora(quadroDesenquadrado);
+    new CamadaAplicacaoReceptora(quadroVerificado);
   }// fim do metodo CamadaEnlaceDadosReceptora
 
   /**
@@ -33,11 +31,7 @@ public class CamadaEnlaceDadosReceptora {
    * @return o quadro ja desenquadrado
    */
   public int[] CamadaEnlaceDadosReceptoraEnquadramento(int quadro[]) {
-    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada(); // alterar
-                                                                                                             // de
-                                                                                                             // acordo
-                                                                                                             // com o
-                                                                                                             // teste
+    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
     int[] quadroDesenquadrado = null;
     switch (tipoDeEnquadramento) {
       case 0: // contagem de caracteres
@@ -58,8 +52,24 @@ public class CamadaEnlaceDadosReceptora {
 
   }// fim do metodo CamadaEnlaceDadosReceptoraEnquadramento
 
-  public void CamadaEnlaceDadosReceptoraControleDeErro(int quadro[]) {
-    // algum codigo aqui
+  public int[] CamadaEnlaceDadosReceptoraControleDeErro(int quadro[]) {
+    int tipoDeControleDeErro = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoControleErroSelecionada();
+    int[] quadroVerificado = null;
+    switch (tipoDeControleDeErro) {
+      case 0: // paridade par
+        quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(quadro);
+        break;
+      case 1: // paridade impar
+        quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(quadro);
+        break;
+      case 2: // CRC
+        quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErroCRC(quadro);
+        break;
+      case 3: // hamming
+        quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming(quadro);
+        break;
+    }// fim do switch/case
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErro
 
   public void CamadaEnlaceDadosReceptoraControleDeFluxo(int quadro[]) {
@@ -308,5 +318,25 @@ public class CamadaEnlaceDadosReceptora {
 
     return quadro;
   } // fim CamadaEnlaceDadosReceptoraEnquadramentoViolacaoDaCamadaFisica
+
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar
+
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar
+
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCRC
+
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming(int quadro[]) {
+    // algum codigo aqui
+    return quadro;
+  }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming
 
 }// fim da classe CamadaEnlaceDadosReceptora
