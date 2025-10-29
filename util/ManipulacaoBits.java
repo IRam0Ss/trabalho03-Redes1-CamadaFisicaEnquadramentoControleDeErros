@@ -266,6 +266,10 @@ public class ManipulacaoBits {
     // Percorre o quadro do ULTIMO bit possivel para o PRIMEIRO
     for (int i = (quadro.length * 32) - 1; i >= 0; i--) {
       // le o bit na posicao atual
+      if(quadro[i] == 0){
+        continue; // pula bits zero rapidamente
+      }
+      
       if (lerBits(quadro, i, 1) == 1) {
         ultimoBitUm = i; // Encontrou a posicao do ultimo '1'
         break; // Pode parar de procurar
