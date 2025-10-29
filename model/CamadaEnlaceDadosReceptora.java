@@ -24,6 +24,12 @@ public class CamadaEnlaceDadosReceptora {
     this.controlerTelaPrincipal = controlerTelaPrincipal;
   } // fim do construtor
 
+  /**
+   * metodo responsavel por receber o quadro da camada fisica e processa-lo
+   * 
+   * @param quadro quadro recebido da camada fisica com enquadramento e controle
+   *               de erro incluidos
+   */
   public void receberQuadro(int[] quadro) {
 
     int[] quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadro); // desenquadra o quadro
@@ -31,8 +37,10 @@ public class CamadaEnlaceDadosReceptora {
     int[] quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadroDesenquadrado); // verifica erros no
                                                                                             // quadro
 
-    CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o fluxo de dados
+    // CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o
+    // fluxo de dados
 
+    // decisao de manter ou descartar o quadro
     if (quadroVerificado != null) { // quadro verificado sera nulo somente quando for detectado erro, pois sera
                                     // descartado
       System.out.println("Camada Enlace Receptora: Quadro valido. Enviando para a Aplicacao.");
@@ -52,7 +60,8 @@ public class CamadaEnlaceDadosReceptora {
       });
     } // fim if/else
 
-    //this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o quadro para a proxima camada
+    // this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o
+    // quadro para a proxima camada
   } // fim do metodo receberQuadro
 
   /**
@@ -350,44 +359,17 @@ public class CamadaEnlaceDadosReceptora {
     return quadro;
   } // fim CamadaEnlaceDadosReceptoraEnquadramentoViolacaoDaCamadaFisica
 
+  /**
+   * metodo para verificar erros no quadro utilizando o metodo de bit de paridade
+   * par
+   * 
+   * @param quadro quadro recebido, ja desenquadrado
+   * @return quadro verificado, e removido os bits de controle, ou nulo se
+   *         detectar erro
+   */
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[]) {
 
-    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
-    if (totalBits == 0)
-      return new int[0]; // retorna quadro vazio se nao houver bits reais
-
-    int contadorDeUns = 0;
-    for (int i = 0; i < totalBits - 1; i++) { // -1 para ignorar o bit de paridade
-      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
-      if (bit == 1) {
-        contadorDeUns++;
-      } // fim if
-    } // fim for
-
-    // para a paridade par, a contagem total de uns deve ser par
-    boolean paridadeCorreta = (contadorDeUns % 2 == 0); // da true se for par
-
-    // debug
-    System.out.println(
-        "Controle de Erro (Par) - Receptor: " + contadorDeUns + " bits '1' encontrados. Esta correto? "
-            + paridadeCorreta);
-
-    if (!paridadeCorreta) {
-      return null; // retorna nulo se detectar erro
-    } // fim if
-
-    // se esta correto a paridade, remove o bit de controle de erro adicionado
-    int totalBitsCargaUtil = totalBits - 1;
-    int tamanhoCargaUtil = (totalBitsCargaUtil + 31) / 32; // arredondamento de seguranca para evitar perca de dados
-    int[] quadroVerificado = new int[tamanhoCargaUtil];
-
-    // Copia todos os bits, EXCETO o ultimo
-    for (int i = 0; i < totalBitsCargaUtil; i++) {
-      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
-      ManipulacaoBits.escreverBits(quadroVerificado, i, bit, 1);
-    } // fim do for
-
-    return quadroVerificado;
+    return quadro;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {
