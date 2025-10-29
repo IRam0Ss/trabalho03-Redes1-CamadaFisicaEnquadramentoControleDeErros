@@ -10,18 +10,44 @@ import util.ManipulacaoBits;
  */
 public class CamadaFisicaReceptora {
 
-  /**
-   * construtor da classe responsavel por receber a mensagem codificada e
-   * decodificasr de acordo com o metodo que foi selecionado
-   * 
-   * @param quadro a mensagem codificada
-   */
-  public CamadaFisicaReceptora(int[] quadro) {
+  private CamadaEnlaceDadosReceptora camadaEnlaceDadosReceptora; // referencia a camada superior 
+  private ControlerTelaPrincipal controlerTelaPrincipal; // referencia para a interface grafica
+  private MeioDeComunicacao meioDeComunicacao; // 
 
-    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentSinalRecebido(quadro); // exibe a representacao do
-                                                                                        // sinal recebido
-    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
-    int tipoDeDecodificacao = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoSelecionada();
+  /**
+   * construtor da classe
+   * 
+   * @param camadaEnlaceDadosReceptora referencia para a camada superior
+   * @param controlerTelaPrincipal     referencia para o controle da interface
+   */
+  public CamadaFisicaReceptora(CamadaEnlaceDadosReceptora camadaEnlaceDadosReceptora,
+      ControlerTelaPrincipal controlerTelaPrincipal) {
+    this.camadaEnlaceDadosReceptora = camadaEnlaceDadosReceptora;
+    this.controlerTelaPrincipal = controlerTelaPrincipal;
+  } // fim construtor
+
+  /**
+   * define o meio de comunicacao que sera utilizado pelo controleRede
+   * 
+   * @param meioDeComunicacao // meio de comunicacao que sera utilizado
+   */
+  public void setMeioDeComunicacao(MeioDeComunicacao meioDeComunicacao) {
+    this.meioDeComunicacao = meioDeComunicacao;
+  } // fim setMeioComunicacao
+
+  /**
+   * metodo responsavel por receber o quadro do meio de comunicacao, decodifica-lo
+   * e enviar para a proxima camada
+   * 
+   * @param quadro representacaso em bits dos sinal transmitido
+   */
+  public void receberQuadro(int[] quadro) {
+
+    this.controlerTelaPrincipal.exibirRepresentSinalRecebido(quadro);
+
+    // sinal recebido
+    int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
+    int tipoDeDecodificacao = this.controlerTelaPrincipal.opcaoSelecionada();
     int fluxoBrutoDeBits[] = null;
 
     if (tipoDeEnquadramento == 3) {
@@ -41,7 +67,7 @@ public class CamadaFisicaReceptora {
     } // fim if/else
       // chama proxima camada
 
-    new CamadaEnlaceDadosReceptora(fluxoBrutoDeBits);
+    this.camadaEnlaceDadosReceptora.receberQuadro(fluxoBrutoDeBits);
   }// fim do metodo CamadaFisicaTransmissora
 
   /**
@@ -245,5 +271,4 @@ public class CamadaFisicaReceptora {
     return resultadoFinal;
 
   } // fim metodo CamadaFisicaReceptoraDecodificacaoComViolacao
-
 }// fim da classe

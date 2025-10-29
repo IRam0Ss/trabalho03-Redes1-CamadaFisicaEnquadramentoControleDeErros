@@ -13,19 +13,38 @@ import util.ManipulacaoBits;
  */
 public class CamadaFisicaTransmissora {
 
+  private ControlerTelaPrincipal controleTelaPrincipal; // referencia para a interface grafica
+  private MeioDeComunicacao meioDeComunicacao; // referencia para o meio de comunicacao
+
   /**
-   * trabalhando com o construtor da classe, essa classe eh responsavel por
-   * aplicar a codificacao da mensaagem escolhida pelo usuario e enviar a
-   * simulacoa de sinal para a proxima camada
+   * contrutor da classe
    * 
-   * @param quadro mensagem na forma binaria, o array de int, ja com os bits
-   *               armazenados recebido da camada anterior
+   * @param controleTelaPrincipal referencia para controle da interface
    */
-  public CamadaFisicaTransmissora(int quadro[]) {
-    int tipoDeCodificacao = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoSelecionada();
+  public CamadaFisicaTransmissora(ControlerTelaPrincipal controleTelaPrincipal) {
+    this.controleTelaPrincipal = controleTelaPrincipal;
+  } // fim construtor
+
+  /**
+   * metodo usado para definir o meio de comunicacao que sera utilizado
+   * 
+   * @param meioDeComunicacao o meio de comunicacao que sera utilizado
+   */
+  public void setMeioDeComunicacao(MeioDeComunicacao meioDeComunicacao) {
+    this.meioDeComunicacao = meioDeComunicacao;
+  } // fim setMeioComunicacao
+
+  /**
+   * metodo responsavel por transmitir o quadro apos aplicar a codificacao
+   * selecionada, chamado pela camada superior
+   * 
+   * @param quadro o quadro de bits ja passado pela enlace
+   */
+  public void transmitirQuadro(int quadro[]) {
+    int tipoDeCodificacao = this.controleTelaPrincipal.opcaoSelecionada();
     int fluxoBrutoDeBits[] = null; // eh a representacao do sinal que sera enviado
 
-    int tipoDeEnquadramento = ControlerTelaPrincipal.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
+    int tipoDeEnquadramento = this.controleTelaPrincipal.opcaoEnquadramentoSelecionada();
 
     if (tipoDeCodificacao == 0 & tipoDeEnquadramento == 3) {
       Platform.runLater(() -> { // mostra visualmente o alerta de que a combinacao nao eh permitida
@@ -57,12 +76,12 @@ public class CamadaFisicaTransmissora {
       }// fim do switch/case
     }
 
-    ControlerTelaPrincipal.controlerTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoDeBits); // exibe o sinal
-                                                                                                     // codificado que
-                                                                                                     // sera transmitido
+    this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoDeBits); // exibe o sinal
+                                                                                  // codificado que
+                                                                                  // sera transmitido
 
-    new MeioDeComunicacao(fluxoBrutoDeBits); // envia o sinal a ser transmitido para a proxima "parte" o meio de
-                                             // comunicacao
+    meioDeComunicacao.transmitirMensagem(fluxoBrutoDeBits); // envia o sinal a ser transmitido para a proxima "parte" o
+                                                            // meio de comunicacao
   } // fim do construtor
 
   /**
@@ -291,5 +310,9 @@ public class CamadaFisicaTransmissora {
 
     return fluxoBrutoDeBitsFinal; // retorna o array perfeitamente ajustado
   }// fim metodo CamadaFisicaTransmissoraComViolacao
+
+  public ControlerTelaPrincipal getControleTelaPrincipal() {
+    return this.controleTelaPrincipal;
+  }
 
 }// fim da classe
