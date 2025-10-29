@@ -377,7 +377,7 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentSinalTransmitido(int[] representSinal) {
 
-    representSinalTransmitido.setText(ManipulacaoBits.exibirBitsStr(representSinal));
+    representSinalTransmitido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
 
   }// fim metodo
 
@@ -390,7 +390,7 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentSinalRecebido(int[] representSinal) {
 
-    representSinalRecebido.setText(ManipulacaoBits.exibirBitsStr(representSinal));
+    representSinalRecebido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
 
   }// fim metodo
 

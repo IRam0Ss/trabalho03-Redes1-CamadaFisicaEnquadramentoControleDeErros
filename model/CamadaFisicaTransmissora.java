@@ -16,6 +16,7 @@ public class CamadaFisicaTransmissora {
   private ControlerTelaPrincipal controleTelaPrincipal; // referencia para a interface grafica
   private MeioDeComunicacao meioDeComunicacao; // referencia para o meio de comunicacao
 
+
   /**
    * contrutor da classe
    * 
@@ -76,9 +77,7 @@ public class CamadaFisicaTransmissora {
       }// fim do switch/case
     }
 
-    this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoDeBits); // exibe o sinal
-                                                                                  // codificado que
-                                                                                  // sera transmitido
+    this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoDeBits);
 
     meioDeComunicacao.transmitirMensagem(fluxoBrutoDeBits); // envia o sinal a ser transmitido para a proxima "parte" o
                                                             // meio de comunicacao

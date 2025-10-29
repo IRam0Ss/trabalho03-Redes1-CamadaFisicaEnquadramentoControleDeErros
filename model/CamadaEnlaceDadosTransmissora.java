@@ -24,16 +24,23 @@ public class CamadaEnlaceDadosTransmissora {
     this.controlerTelaPrincipal = controlerTelaPrincipal;
   } // fim contrutor
 
+  /**
+   * metodo que envia o quadro para a proxima camada da rede apos aplicar o
+   * enquadramaneto e controle de erro selecionado
+   * 
+   * @param quadro mensagem em bits recebida pela camada anterior
+   */
   public void transmitirQuadro(int[] quadro) {
 
     // debug
     System.out.println("Camada de Enlace TX: Recebi " + quadro.length + " inteiros para transmitir.");
 
-    // trata cada int ou seja cada 32bits de carga util como sendo um subquadro
+    // trata cada int ou seja cada 32 bits de carga util como sendo um subquadro
     for (int i = 0; i < quadro.length; i++) {
 
       // verifica se o 'int' contem dados validos antes de processar
-      int totalBitsNoInt = ManipulacaoBits.descobrirTotalDeBitsReais(new int[] { quadro[i] });
+      int totalBitsNoInt = ManipulacaoBits.descobrirTotalDeBitsReais(new int[] {
+          quadro[i] });
       if (totalBitsNoInt == 0) {
         continue; // pular 'ints' de padding (vazios)
       } // fim if
@@ -43,16 +50,16 @@ public class CamadaEnlaceDadosTransmissora {
       // debug
       System.out.println("Enlace TX: Processando sub-quadro " + i);
 
-      // aplica enquadramento no subquadro.
-      int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(subQuadro);
-
       // aplica controle de erro
-      int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
+      int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(subQuadro);
+
+      // aplica enquadramento no subquadro.
+      int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(quadroComControleDeErro);
 
       // 3. APLICA CONTROLE DE FLUXO (Stub de Teste)
       // Este metodo, por agora, apenas envia para a proxima camada.
       // Ele NAO espera pelo ACK, permitindo testar o fluxo.
-      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroComControleDeErro);
+      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroEnquadrado);
 
     } // fim for
 
@@ -450,39 +457,14 @@ public class CamadaEnlaceDadosTransmissora {
     return quadro;
   }// fim metodo CamadaEnlaceDadosTransmissoraEnquadramentoViolacaoDeCamadaFisica
 
+  /**
+   * metodo que aplica o controle de erro por bit de paridade par
+   * 
+   * @param quadro quadro original a ser aplicado o controle de erro
+   * @return quadro com o bit de paridade anexado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar(int quadro[]) {
-    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
-    if (totalBits == 0)
-      return quadro; // Nao adiciona paridade a quadros vazios
-
-    int contagemBitsUm = 0;
-    // percorre o quadro e conta o numero de bits 1
-    for (int i = 0; i < totalBits; i++) {
-      if (ManipulacaoBits.lerBits(quadro, i, 1) == 1) {
-        contagemBitsUm++;
-      } // fim if
-    } // fim for
-
-    // se os bits 1 forem par entao adiciona 0 se for impar adiciona 1 para garantir
-    // a paridade
-    int bitParidade = (contagemBitsUm % 2 == 0) ? 0 : 1;
-
-    int novoTotalBits = totalBits + 1;
-    int novoTamanhoArray = (novoTotalBits + 31) / 32; // arredondamento de seguranca
-    int[] quadroComParidade = new int[novoTamanhoArray];
-
-    for (int i = 0; i < totalBits; i++) {
-      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
-      ManipulacaoBits.escreverBits(quadroComParidade, i, bit, 1);
-    } // fim do for
-
-    ManipulacaoBits.escreverBits(quadroComParidade, totalBits, bitParidade, 1);
-
-    // debug
-    System.out
-        .println("Controle de Erro (Par): " + contagemBitsUm + " bits '1'. Bit de paridade anexado: " + bitParidade);
-
-    return quadroComParidade;
+    return quadro; // fazer aqui o codigo
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar(int quadro[]) {

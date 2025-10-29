@@ -14,6 +14,7 @@ public class CamadaFisicaReceptora {
   private ControlerTelaPrincipal controlerTelaPrincipal; // referencia para a interface grafica
   private MeioDeComunicacao meioDeComunicacao; // 
 
+
   /**
    * construtor da classe
    * 
