@@ -264,29 +264,24 @@ public class ManipulacaoBits {
 
     int ultimoBitUm = -1;
     // Percorre o quadro do ULTIMO bit possivel para o PRIMEIRO
+    // (quadro.length * 32) - 1 e a posicao do ultimo bit no array
     for (int i = (quadro.length * 32) - 1; i >= 0; i--) {
       // le o bit na posicao atual
-      if(quadro[i] == 0){
-        continue; // pula bits zero rapidamente
-      }
-      
       if (lerBits(quadro, i, 1) == 1) {
-        ultimoBitUm = i; // Encontrou a posicao do ultimo '1'
+        ultimoBitUm = i; // Encontrou a posicao (indice 0 a N) do ultimo '1'
         break; // Pode parar de procurar
       }
     }
 
     // nao encontrou nenhum bit '1'.
     if (ultimoBitUm == -1) {
-      // se o quadro nao for vazio, assumimos que ele contem pelo menos 1 byte de
-      return quadro.length > 0 ? 8 : 0;
+      if (quadro.length > 0) return 8;
+      return 0; // Quadro vazio
     }
+   
+    int byteOndeOcorreu = ultimoBitUm / 8;
 
-    // se encontrou o ultimo bit 1, pega o byte onde ele tava localizado como ultimo
-    // valido
-    int byteOndeOcorreu = ultimoBitUm / 8; // descobre o indice do byte
-    return (byteOndeOcorreu + 1) * 8; // retorna o numero total de bits ate o final daquele byte
-
+    return (byteOndeOcorreu + 1) * 8;
   } // fim do metodo descobrirTotalDeBitsReais
 
 }// fim da classe

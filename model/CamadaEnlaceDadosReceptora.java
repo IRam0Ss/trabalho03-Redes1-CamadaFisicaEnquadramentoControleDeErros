@@ -32,21 +32,9 @@ public class CamadaEnlaceDadosReceptora {
    */
   public void receberQuadro(int[] quadro) {
 
-    int[] quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadro); // desenquadra o quadro
+    int[] quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadro); // verifica erros no quadro
 
-    int[] quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadroDesenquadrado); // verifica erros no
-                                                                                            // quadro
-
-    // CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o
-    // fluxo de dados
-
-    // decisao de manter ou descartar o quadro
-    if (quadroVerificado != null) { // quadro verificado sera nulo somente quando for detectado erro, pois sera
-                                    // descartado
-      System.out.println("Camada Enlace Receptora: Quadro valido. Enviando para a Aplicacao.");
-      // chama proxima camada
-      this.camadaAplicacaoReceptora.receberQuadro(quadroVerificado);
-    } else {
+    if (quadroVerificado == null) {
       // Se o quadro for invalido descarta
       System.out.println("Camada Enlace Receptora: ERRO DETECTADO. Quadro descartado.");
 
@@ -56,9 +44,23 @@ public class CamadaEnlaceDadosReceptora {
         alert.setTitle("Deteccao de Erro");
         alert.setHeaderText("QUADRO CORROMPIDO!");
         alert.setContentText("A Camada de Enlace Receptora detectou um erro no quadro recebido e o descartou.");
-        alert.showAndWait();
+        alert.show();
       });
-    } // fim if/else
+
+      return; // sai do metodo sem processar o quadro
+    } // fim if
+
+    // se chegou aqui o quadro esta valido
+
+    int[] quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadroVerificado); // desenquadra o quadro
+
+    // CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o
+    // fluxo de dados
+
+    System.out.println("Camada Enlace Receptora: Quadro valido. Enviando para a Aplicacao.");
+
+    // chama proxima camada
+    this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o quadro para a proxima camada
 
     // this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o
     // quadro para a proxima camada
@@ -369,12 +371,91 @@ public class CamadaEnlaceDadosReceptora {
    */
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[]) {
 
-    return quadro;
+    int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
+
+    if (totalBitsRecebidos == 0) {
+      return quadro;
+    }
+
+    int totalBitsReaisVerificar = totalBitsRecebidos - 7; // remove os bits de padding
+
+    // conta o numero de bits 1
+    int contadorUns = 0;
+    for (int i = 0; i < totalBitsReaisVerificar; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      if (bitAtual == 1) {
+        contadorUns++;
+      }
+    } // fim for
+
+    if (contadorUns % 2 != 0) {
+      // se o numero de uns for impar, entao houve erro
+      return null; // retorna nulo para indicar erro
+    }
+
+    // nao teve erro
+
+    int totalBitsSemControle = totalBitsReaisVerificar - 1; // remove o bit de paridade
+
+    // Se o quadro so tinha o bit de paridade (ou estava vazio), retorna vazio
+    if (totalBitsSemControle <= 0) {
+      return new int[0];
+    }
+
+    int tamanhoArrayFinal = (totalBitsSemControle + 31) / 32;
+    int[] quadroVerificado = new int[tamanhoArrayFinal];
+
+    // escreve no quadro sem o controle os bits uteis
+    for (int i = 0; i < totalBitsSemControle; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroVerificado, i, bitAtual, 1);
+    } // fim for
+
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+    
+    int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
+
+    if (totalBitsRecebidos == 0) {
+      return quadro;
+    }
+
+    int totalBitsReaisVerificar = totalBitsRecebidos - 7; // remove os bits de padding
+
+    // conta o numero de bits 1
+    int contadorUns = 0;
+    for (int i = 0; i < totalBitsReaisVerificar; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      if (bitAtual == 1) {
+        contadorUns++;
+      }
+    } // fim for
+
+    if (contadorUns % 2 == 0) {
+      // se o numero de uns for par, entao houve erro
+      return null; // retorna nulo para indicar erro
+    }
+
+    // nao teve erro
+    int totalBitsSemControle = totalBitsReaisVerificar - 1; // remove o bit de paridade
+
+    // Se o quadro so tinha o bit de paridade (ou estava vazio), retorna vazio
+    if (totalBitsSemControle <= 0) {
+      return new int[0];
+    }
+
+    int tamanhoArrayFinal = (totalBitsSemControle + 31) / 32;
+    int[] quadroVerificado = new int[tamanhoArrayFinal];
+
+    // escreve no quadro sem o controle os bits uteis
+    for (int i = 0; i < totalBitsSemControle; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroVerificado, i, bitAtual, 1);
+    } // fim for
+
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) {
