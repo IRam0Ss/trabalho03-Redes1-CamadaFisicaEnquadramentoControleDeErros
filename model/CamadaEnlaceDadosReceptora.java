@@ -365,7 +365,7 @@ public class CamadaEnlaceDadosReceptora {
    * metodo para verificar erros no quadro utilizando o metodo de bit de paridade
    * par
    * 
-   * @param quadro quadro recebido, ja desenquadrado
+   * @param quadro quadro recebido
    * @return quadro verificado, e removido os bits de controle, ou nulo se
    *         detectar erro
    */
@@ -414,8 +414,16 @@ public class CamadaEnlaceDadosReceptora {
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar
 
+  /**
+   * metodo para verificar erros no quadro utilizando o metodo de bit de paridade
+   * impar
+   * 
+   * @param quadro quadro recebido
+   * @return quadro verificado, e removido os bits de controle, ou nulo se
+   *         detectar erro
+   */
   public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {
-    
+
     int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
 
     if (totalBitsRecebidos == 0) {
