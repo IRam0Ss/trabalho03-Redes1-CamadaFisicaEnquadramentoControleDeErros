@@ -152,6 +152,10 @@ public class ControlerTelaPrincipal {
     processarFilaAnimacao();
   }// fim metodo desenharSinalTransmissao
 
+  /**
+   * metodo responsavel por processar a fila de animacao, se nao houver nenhuma
+   * animacao em andamento
+   */
   public void processarFilaAnimacao() {
     // Se uma animação já está rodando, ou se a fila está vazia, não faz nada.
     // A animação atual irá chamar esse método quando terminar.

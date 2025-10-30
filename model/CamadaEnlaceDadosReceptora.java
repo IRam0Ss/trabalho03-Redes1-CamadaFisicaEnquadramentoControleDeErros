@@ -467,8 +467,70 @@ public class CamadaEnlaceDadosReceptora {
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
+
+    final int POLINOMIO_GERADOR = 0x04C11DB7;
+    final int VALOR_INICIAL = 0xFFFFFFFF;
+    final int VALOR_FINAL_XOR = 0xFFFFFFFF;
+
+    int registradorCRC = VALOR_INICIAL;
+
+    if (totalBitsRecebidos < 32) { // se tem menos de 32 bits, nao tem como ter CRC
+      return null; // quadro corrompido
+    } // fim if
+
+    int totalBitsReaisVerificar = totalBitsRecebidos - 32; // remove os bits de padding
+    int crcRecebido = ManipulacaoBits.lerBits(quadro, totalBitsReaisVerificar, 32); // le o CRC recebido
+
+    // calcula o CRC dos dados recebidos
+    for (int i = 0; i < totalBitsReaisVerificar; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // pega o bit mais significativo
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if (xorBit == 1) { // aplica o polinomio gerador
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR;
+      } // fim if
+
+    } // fim for
+
+    // processamento dos 32 bits de 0 adicionais
+    for (int i = 0; i < 32; i++) {
+
+      int bitAtual = 0; // bits adicionais sao 0
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // obtém o bit mais significativo do registrador CRC
+
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if (xorBit == 1) {
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR; // aplica o polinomio gerador
+      } // fim do if
+
+    } // fim do for
+
+    int crcCalculado = registradorCRC ^ VALOR_FINAL_XOR; // aplica o xor final
+
+    if (crcRecebido != crcCalculado) { // se os crcs forem diferentes ocorreu erro
+      System.out.println("Erro de CRC! Recebido: " + Integer.toHexString(crcRecebido) +
+          ", Calculado: " + Integer.toHexString(crcCalculado));
+      return null; // Descarta o quadro
+    }
+
+    // se nao foi corrompido entao
+    int novoTamanhoArray = (totalBitsReaisVerificar + 31) / 32;
+    int[] quadroVerificado = new int[novoTamanhoArray];
+
+    for(int i = 0; i < totalBitsReaisVerificar; i++){
+      int bit = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroVerificado, i, bit, 1);
+    } // fim for
+
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCRC
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming(int quadro[]) {

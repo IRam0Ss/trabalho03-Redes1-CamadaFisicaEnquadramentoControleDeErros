@@ -569,8 +569,64 @@ public class CamadaEnlaceDadosTransmissora {
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCRC(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    final int POLINOMIO_GERADOR = 0x04C11DB7; // Polinomio CRC-32
+    final int VALOR_INICIAL = 0xFFFFFFFF; // Valor inicial do registrador CRC
+    final int VALOR_FINAL_XOR = 0xFFFFFFFF; // Valor final para XOR, adicionar o CRC correto no quadro
+
+    int registradorCRC = VALOR_INICIAL;
+
+    // processamendo dos bits do quadro
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1); // lê o bit atual
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // obtém o bit mais significativo do registrador CRC
+
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if(xorBit == 1) {
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR; // aplica o polinomio gerador
+      }// fim do if
+
+    }// fim do for
+
+
+    // processamento dos 32 bits de 0 adicionais
+    for (int i = 0; i < 32; i++) {
+
+      int bitAtual = 0; // bits adicionais sao 0
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // obtém o bit mais significativo do registrador CRC
+
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if(xorBit == 1) {
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR; // aplica o polinomio gerador
+      }// fim do if
+
+    } // fim do for
+
+    int crcFinal = registradorCRC ^ VALOR_FINAL_XOR; // valor final do CRC apos o XOR final
+
+    // cria o novo quadro com o CRC anexado
+    int novoTotalBits = totalBits + 32;
+    int tamanhoArrayFinal = (novoTotalBits + 31) / 32;
+    int[] quadroComCRC = new int[tamanhoArrayFinal];
+
+    // copia os dados originais para o inicio do novo quadro
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroComCRC, i, bitAtual, 1);
+    } // fim for
+
+    // anexa o CRC no final do quadro
+    ManipulacaoBits.escreverBits(quadroComCRC, totalBits, crcFinal, 32);
+    
+    return quadroComCRC;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCRC
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming(int quadro[]) {
