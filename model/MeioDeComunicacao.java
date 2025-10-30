@@ -58,15 +58,13 @@ public class MeioDeComunicacao {
     // supor o tamanho dos quadros fisicos, baseado na codificacao feita
     int tamanhoLogicoDoQuadroEmBits;
     switch (tipoDeEnquadramento) {
-      case 0:
+      case 0:        
+      case 1:
+      case 2: 
         tamanhoLogicoDoQuadroEmBits = 40;
         break;
-      case 1: // insersao de bytes tem tamanho variavel
-      case 2: // insersao de bits tem tamanho variavel
-        tamanhoLogicoDoQuadroEmBits = 32; // usa uma abstracao, aplicando chance de erro a cada 32 bits
-        break;
       case 3:
-        tamanhoLogicoDoQuadroEmBits = 36; // 32 carga util mais 4 bits 1111 de flag
+        tamanhoLogicoDoQuadroEmBits = 36;
         break;
       default:
         tamanhoLogicoDoQuadroEmBits = totalDeBits;

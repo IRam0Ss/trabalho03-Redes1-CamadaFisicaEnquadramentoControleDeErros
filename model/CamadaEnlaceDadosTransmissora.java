@@ -50,16 +50,15 @@ public class CamadaEnlaceDadosTransmissora {
       // debug
       System.out.println("Enlace TX: Processando sub-quadro " + i);
 
-      // aplica controle de erro
-      int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(subQuadro);
-
       // aplica enquadramento no subquadro.
-      int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(quadroComControleDeErro);
+      int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(subQuadro);
+      // aplica controle de erro
+      int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
 
       // 3. APLICA CONTROLE DE FLUXO (Stub de Teste)
       // Este metodo, por agora, apenas envia para a proxima camada.
       // Ele NAO espera pelo ACK, permitindo testar o fluxo.
-      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroEnquadrado);
+      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroComControleDeErro);
 
     } // fim for
 
@@ -464,12 +463,109 @@ public class CamadaEnlaceDadosTransmissora {
    * @return quadro com o bit de paridade anexado
    */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar(int quadro[]) {
-    return quadro; // fazer aqui o codigo
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    if (totalBits == 0) {
+      return quadro;
+    }
+
+    // conta a quantidade de bits 1 no quadro
+    int contadorUns = 0;
+
+    for (int i = 0; i < totalBits; i++) {
+      if (ManipulacaoBits.lerBits(quadro, i, 1) == 1) {
+        contadorUns++;
+      }
+    } // fim for
+
+    // calcula o bit de paridade necessario
+    int bitDeParidade;
+    if (contadorUns % 2 == 0) {
+      bitDeParidade = 0; // ja eh par
+    } else {
+      bitDeParidade = 1; // precisa adicionar 1 para ficar par
+    }
+
+    int novoTotalBits = totalBits + 1;
+    int novoTotalBitsAlinhado = (novoTotalBits + 7) / 8 * 8; // alinha para o proximo byte
+
+    // o + 7 garante padding para alhinhar o bit de paridade mesmo se for 0
+
+    int tamanhoArrayFinal = (novoTotalBitsAlinhado + 31) / 32;
+    int[] quadroComParidade = new int[tamanhoArrayFinal];
+
+    // copia a carga do quadro para o quadro verificado
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroComParidade, i, bitAtual, 1);
+    } // fim for
+
+    // adiciona o bit de paridade no final
+    ManipulacaoBits.escreverBits(quadroComParidade, totalBits, bitDeParidade, 1);
+
+    // Adiciona um "bit marcador" 1 no final do quadro arredondado
+    // Isso garante que descobrirTotalDeBitsReais() no receptor funcione.
+    // O receptor ja ignora esse ultimo 7 bits
+    ManipulacaoBits.escreverBits(quadroComParidade, novoTotalBitsAlinhado - 1, 1, 1);
+
+    return quadroComParidade;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadePar
 
+  /**
+   * metodo que aplica o controle de erro por bit de paridade impar
+   * 
+   * @param quadro quadro original a ser aplicado o controle de erro
+   * @return quadro com o bit de paridade anexado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    if (totalBits == 0) {
+      return quadro;
+    }
+
+    // conta a quantidade de bits 1 no quadro
+    int contadorUns = 0;
+
+    for (int i = 0; i < totalBits; i++) {
+      if (ManipulacaoBits.lerBits(quadro, i, 1) == 1) {
+        contadorUns++;
+      }
+    } // fim for
+
+    // calcula o bit de paridade necessario
+    int bitDeParidade;
+    if (contadorUns % 2 == 0) {
+      bitDeParidade = 1; // precisa adicionar o 1 para ficar impar
+    } else {
+      bitDeParidade = 0; // ja eh impar
+    }
+
+    int novoTotalBits = totalBits + 1;
+    int novoTotalBitsAlinhado = (novoTotalBits + 7) / 8 * 8; // alinha para o proximo byte
+
+    // o + 7 garante padding para alhinhar o bit de paridade mesmo se for 0
+
+    int tamanhoArrayFinal = (novoTotalBitsAlinhado + 31) / 32;
+    int[] quadroComParidade = new int[tamanhoArrayFinal];
+
+    // copia a carga do quadro para o quadro verificado
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroComParidade, i, bitAtual, 1);
+    } // fim for
+
+    // adiciona o bit de paridade no final
+    ManipulacaoBits.escreverBits(quadroComParidade, totalBits, bitDeParidade, 1);
+
+    // Adiciona um "bit marcador" 1 no final do quadro arredondado
+    // Isso garante que descobrirTotalDeBitsReais() no receptor funcione.
+    // O receptor ja ignora esse ultimo 7 bits
+    ManipulacaoBits.escreverBits(quadroComParidade, novoTotalBitsAlinhado - 1, 1, 1);
+
+    return quadroComParidade;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar
 
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCRC(int quadro[]) {

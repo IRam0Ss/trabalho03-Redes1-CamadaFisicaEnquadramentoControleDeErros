@@ -113,12 +113,15 @@ public class CamadaFisicaReceptora {
       int bit2 = (quadro[indiceBit2] >> posicaoBit2) & 1;
 
       // determina qual o bit original
-      int bitOriginal = 0;
+      int bitOriginal;
       if (bit1 == 1 && bit2 == 0) { // se o par de bit for 10 entao o bit original eh 1, caso contrario ele eh 0
         bitOriginal = 1;
+      }else if (bit1 == 0 && bit2 == 1) {
+        bitOriginal = 0;
+      } else {
+        continue; // pula para o proximo par de bits
       }
 
-      // escreve o bit no array de retorno
       if (bitOriginal == 1) {
         int posicaoGlobalOriginal = i / 2; // mapea a posicao do fluxo manchester de volta na posicao original
         int indiceOriginal = posicaoGlobalOriginal / 32;
