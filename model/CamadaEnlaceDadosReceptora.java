@@ -525,7 +525,7 @@ public class CamadaEnlaceDadosReceptora {
     int novoTamanhoArray = (totalBitsReaisVerificar + 31) / 32;
     int[] quadroVerificado = new int[novoTamanhoArray];
 
-    for(int i = 0; i < totalBitsReaisVerificar; i++){
+    for (int i = 0; i < totalBitsReaisVerificar; i++) {
       int bit = ManipulacaoBits.lerBits(quadro, i, 1);
       ManipulacaoBits.escreverBits(quadroVerificado, i, bit, 1);
     } // fim for
@@ -534,8 +534,81 @@ public class CamadaEnlaceDadosReceptora {
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCRC
 
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBitsReal = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    if (totalBitsReal == 0) {
+      return new int[0];
+    }
+
+    // descobrir a quantidade de bits de paridade da mensagem
+    int quantBitsParidade = 0;
+    while ((1 << quantBitsParidade) <= totalBitsReal) {
+      quantBitsParidade++;
+    } // fim while
+
+    int posicaoErro = 0;
+
+    // calcula e descobre se tem e onde tem o erro
+    for (int i = 0; i < quantBitsParidade; i++) {
+
+      int posBitParidade = 1 << i; // Posicao do bit de paridade (1, 2, 4, 8, ...)
+      int contadorUns = 0;
+
+      // percorre todos os bits cobertos pelo bit de paridade do momento
+      for (int bit = 1; bit <= totalBitsReal; bit++) {
+        // verifica se o bit deve ser checado
+        if ((bit & posBitParidade) != 0) {
+          // recalcula a paridade incluindo o bit hamming
+          if (ManipulacaoBits.lerBits(quadro, bit - 1, 1) == 1) {
+            contadorUns++;
+          } // fim if
+        } // fim if
+      } // fim for bit
+
+      // Se a contagem total for IMPAR, a paridade PAR falhou.
+      // Adiciona o peso deste bit de paridade (posBitParidade) a posicao do erro.
+      if (contadorUns % 2 != 0) {
+        posicaoErro += posBitParidade;
+      }
+
+    } // fim for i
+
+    // corrigir possivel erro
+    // posicaoErro > 0 significa que um ou mais bits de paridade falharam.
+    if (posicaoErro > 0 && posicaoErro <= totalBitsReal) {
+      System.out.println("HAMMING RX: Erro detectado na posicao " + posicaoErro + ". Corrigindo bit...");
+
+      // inverte o bit na posicao do erro (posicaoErro - 1 para 0-indexado)
+      int bitAtual = ManipulacaoBits.lerBits(quadro, posicaoErro - 1, 1);
+      ManipulacaoBits.escreverBits(quadro, posicaoErro - 1, 1 - bitAtual, 1);
+    } // fim if
+
+    // extrai os dados corrigidos
+    int totalBitsFinal = totalBitsReal - quantBitsParidade;
+    int tamanhoQuadroVerificado = (totalBitsFinal + 31) / 32;
+    int[] quadroVerificado = new int[tamanhoQuadroVerificado];
+
+    int indiceEscrita = 0;
+    for (int i = 1; i <= totalBitsReal; i++) {
+      // se i NAO for potencia de 2 ele eh carga util entao copia
+
+      if (!((i & (i - 1)) == 0)) {
+        int bitCargaUtil = ManipulacaoBits.lerBits(quadro, i - 1, 1);
+        ManipulacaoBits.escreverBits(quadroVerificado, indiceEscrita, bitCargaUtil, 1);
+        indiceEscrita++;
+        if (indiceEscrita >= totalBitsFinal) {
+          break;
+        }
+      }
+    }
+
+    /* 
+    if (posicaoErro > 0) { // existe erro
+      return null;
+    } */
+
+    return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming
 
 }// fim da classe CamadaEnlaceDadosReceptora
