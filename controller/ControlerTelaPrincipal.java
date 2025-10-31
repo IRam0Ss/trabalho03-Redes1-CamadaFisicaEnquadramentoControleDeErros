@@ -59,6 +59,24 @@ public class ControlerTelaPrincipal {
 
   private ControleRede controleRede; // o controlador da rede
 
+  /**
+   * classe interna para representar cada quadro na animacao
+   * para organizar a sequencia de quadros a serem animados
+   */
+  private class QuadroAnimacao {
+    int[] fluxoBits;
+    QuadroAnimacao proxQuadroAnimacao;
+
+    QuadroAnimacao(int[] fluxoBits) {
+      this.fluxoBits = fluxoBits;
+      this.proxQuadroAnimacao = null;
+    }// fim construtor
+  } // fim classe QuadroAnimacao
+
+  private QuadroAnimacao inicioFilaAnimacao = null;
+  private QuadroAnimacao fimFilaAnimacao = null;
+  private boolean animacaoEmAndamento = false;
+
   @FXML
   public void initialize() {
     // Adiciona a choiceBox as opcoes de escolha e inicializa por padrao como
@@ -111,15 +129,53 @@ public class ControlerTelaPrincipal {
   }// fim metodo
 
   /**
-   * realiza a animacao da onda quadrada para simular a transmissao de bits
+   * enfileira o quadro para animacao de transmissao
    * 
    * @param fluxoBitsTransmitido bits a serem transmitidos
    */
   public void desenharSinalTransmissao(int[] fluxoBitsTransmitido) {
-    // finalizar possiveis animacoes anteriores antes de comecar
-    if (animacao != null) {
-      animacao.stop();
+
+    // cria o no com os dados do quadro
+    QuadroAnimacao novoQuadro = new QuadroAnimacao(fluxoBitsTransmitido);
+
+    if (inicioFilaAnimacao == null) {
+      // fila vazia
+      inicioFilaAnimacao = novoQuadro;
+      fimFilaAnimacao = novoQuadro;
+    } else {
+      // fila com elementos
+      fimFilaAnimacao.proxQuadroAnimacao = novoQuadro;
+      fimFilaAnimacao = novoQuadro;
     }
+
+    // tenta processar a fila de animacao
+    processarFilaAnimacao();
+  }// fim metodo desenharSinalTransmissao
+
+  /**
+   * metodo responsavel por processar a fila de animacao, se nao houver nenhuma
+   * animacao em andamento
+   */
+  public void processarFilaAnimacao() {
+    // Se uma animação já está rodando, ou se a fila está vazia, não faz nada.
+    // A animação atual irá chamar esse método quando terminar.
+    if (animacaoEmAndamento || inicioFilaAnimacao == null) {
+      return;
+    }
+
+    animacaoEmAndamento = true; // iniciamos uma animacao
+
+    QuadroAnimacao quadroAtual = inicioFilaAnimacao; // pega o primeiro quadro para animar
+    inicioFilaAnimacao = inicioFilaAnimacao.proxQuadroAnimacao; // atualiza o inicio da fila
+
+    if (inicioFilaAnimacao == null) { // se a fila ficou vazia, atualiza o fim tambem
+      fimFilaAnimacao = null;
+    }
+
+    // extrai o fluxo a ser animado
+    int[] fluxoBitsTransmitido = quadroAtual.fluxoBits;
+
+    // Inicia a animação do fluxo de bits(quadroAtual)
 
     // define a largura do bit simulado a partir da opcao selecionada
     final double LARGURA_BIT;
@@ -215,8 +271,14 @@ public class ControlerTelaPrincipal {
         // condicao de parada verifica quando o inicio da onda
         // ultrapassou a largura do canvas.
         if (posicaoInicialDaOnda > quadroAnimacaoTransmissao.getWidth()) {
-          this.stop();
+          this.stop(); // para esta animacao
+
+          animacaoEmAndamento = false; // sinaliza que a animacao terminou, liberando para a proxima
+
           gc.clearRect(0, 0, quadroAnimacaoTransmissao.getWidth(), ALTURA_GRAFICO);
+
+          processarFilaAnimacao(); // tenta processar a fila de animacao novamente
+
         }
       }
     };
@@ -364,7 +426,7 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentMensagemBinariaRecebida(int[] binarioMensagem) {
 
-    representMensagemBinariaRecebida.setText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
+    representMensagemBinariaRecebida.appendText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
 
   }// fim metodo
 
@@ -430,6 +492,21 @@ public class ControlerTelaPrincipal {
     representMensagemBinariaTransmitida.clear();
     representSinalRecebido.clear();
     representSinalTransmitido.clear();
+
+    // Para qualquer animação que esteja rodando
+    if (animacao != null) {
+      animacao.stop();
+    }
+    // Limpa a fila de quadros pendentes
+    inicioFilaAnimacao = null;
+    fimFilaAnimacao = null;
+    animacaoEmAndamento = false;
+
+    // Limpa o canvas imediatamente
+    if (gc != null) {
+      gc.clearRect(0, 0, quadroAnimacaoTransmissao.getWidth(), quadroAnimacaoTransmissao.getHeight());
+    }
+
   } // fim limparInterface
 
 }// fim da classe

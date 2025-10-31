@@ -10,10 +10,9 @@ import util.ManipulacaoBits;
  */
 public class CamadaFisicaReceptora {
 
-  private CamadaEnlaceDadosReceptora camadaEnlaceDadosReceptora; // referencia a camada superior 
+  private CamadaEnlaceDadosReceptora camadaEnlaceDadosReceptora; // referencia a camada superior
   private ControlerTelaPrincipal controlerTelaPrincipal; // referencia para a interface grafica
-  private MeioDeComunicacao meioDeComunicacao; // 
-
+  private MeioDeComunicacao meioDeComunicacao; //
 
   /**
    * construtor da classe
@@ -30,7 +29,7 @@ public class CamadaFisicaReceptora {
   /**
    * define o meio de comunicacao que sera utilizado pelo controleRede
    * 
-   * @param meioDeComunicacao // meio de comunicacao que sera utilizado
+   * @param meioDeComunicacao meio de comunicacao que sera utilizado
    */
   public void setMeioDeComunicacao(MeioDeComunicacao meioDeComunicacao) {
     this.meioDeComunicacao = meioDeComunicacao;
@@ -103,33 +102,25 @@ public class CamadaFisicaReceptora {
     for (int i = 0; i < totalBitsManchester; i += 2) {
 
       // le e recupera o bit1 do par
-      int indiceBit1 = i / 32;
-      int posicaoBit1 = 31 - (i % 32);
-      int bit1 = (quadro[indiceBit1] >> posicaoBit1) & 1;
-
+      int bit1 = ManipulacaoBits.lerBits(quadro, i, 1);
       // le e recupera o bit2 do par
-      int indiceBit2 = (i + 1) / 32;
-      int posicaoBit2 = 31 - ((i + 1) % 32);
-      int bit2 = (quadro[indiceBit2] >> posicaoBit2) & 1;
+      int bit2 = ManipulacaoBits.lerBits(quadro, i + 1, 1);
 
       // determina qual o bit original
       int bitOriginal;
       if (bit1 == 1 && bit2 == 0) { // se o par de bit for 10 entao o bit original eh 1, caso contrario ele eh 0
         bitOriginal = 1;
-      }else if (bit1 == 0 && bit2 == 1) {
+      } else if (bit1 == 0 && bit2 == 1) {
         bitOriginal = 0;
       } else {
-        continue; // pula para o proximo par de bits
+        bitOriginal = 0;
       }
 
-      if (bitOriginal == 1) {
-        int posicaoGlobalOriginal = i / 2; // mapea a posicao do fluxo manchester de volta na posicao original
-        int indiceOriginal = posicaoGlobalOriginal / 32;
-        int posicaoOriginal = 31 - (posicaoGlobalOriginal % 32);
-        mensagemDecodificada[indiceOriginal] = mensagemDecodificada[indiceOriginal] | (1 << posicaoOriginal);
-      }
+      int posicaoGlobalOriginal = i / 2; // mapea a posicao do fluxo manchester de volta na posicao original
+      ManipulacaoBits.escreverBits(mensagemDecodificada, posicaoGlobalOriginal, bitOriginal, 1);
+      
+    } // fim for
 
-    }
     return mensagemDecodificada;
   }// fim do metodo
 

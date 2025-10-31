@@ -191,18 +191,19 @@ public class ManipulacaoBits {
 
       int bitEscrever = valorEscrever >> (quantidadeDeBits - 1 - i) & 1; // extrai o bit a ser escrito
 
-      // em caso de bit 0 nao faz nada caso o bit for um adiciona
+      int posicaoGlobal = bitInicial + i; // calcula a posicao global do bit a ser escrito
+      int indiceDoPacote = posicaoGlobal / 32; // calcula o indice do pacote, descobre em qual inteiro do array sera
+                                               // escrito
+      int posicaoNoPacote = 31 - (posicaoGlobal % 32); // calcula a posicao dentro do pacote onde o bit sera escrito
+
       if (bitEscrever == 1) {
-
-        int posicaoGlobal = bitInicial + i; // calcula a posicao global do bit a ser escrito
-        int indiceDoPacote = posicaoGlobal / 32; // calcula o indice do pacote, descobre em qual inteiro do array sera
-                                                 // escrito
-        int posicaoNoPacote = 31 - (posicaoGlobal % 32); // calcula a posicao dentro do pacote onde o bit sera escrito
-
+        // "Liga" o bit (usa OR)
         destino[indiceDoPacote] = destino[indiceDoPacote] | (1 << posicaoNoPacote); // escreve o bit 1 na posicao
-                                                                                    // correta
-
       } // fim if
+      else { // ou seja bit 0
+        // "Desliga" o bit (usa AND com uma mascara invertida)
+        destino[indiceDoPacote] = destino[indiceDoPacote] & ~(1 << posicaoNoPacote); // escreve o bit 0
+      }
 
     } // fim for
 
@@ -275,10 +276,11 @@ public class ManipulacaoBits {
 
     // nao encontrou nenhum bit '1'.
     if (ultimoBitUm == -1) {
-      if (quadro.length > 0) return 8;
+      if (quadro.length > 0)
+        return 8;
       return 0; // Quadro vazio
     }
-   
+
     int byteOndeOcorreu = ultimoBitUm / 8;
 
     return (byteOndeOcorreu + 1) * 8;

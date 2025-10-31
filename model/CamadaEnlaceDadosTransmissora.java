@@ -568,14 +568,147 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroComParidade;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar
 
+  /**
+   * metodo que aplica o controle de erro com o polinomio CRC32
+   * 
+   * @param quadro quadro original a ser aplicado controle de erro
+   * @return quadro com controle de erro aplicado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCRC(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    final int POLINOMIO_GERADOR = 0x04C11DB7; // Polinomio CRC-32
+    final int VALOR_INICIAL = 0xFFFFFFFF; // Valor inicial do registrador CRC
+    final int VALOR_FINAL_XOR = 0xFFFFFFFF; // Valor final para XOR, adicionar o CRC correto no quadro
+
+    int registradorCRC = VALOR_INICIAL;
+
+    // processamendo dos bits do quadro
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1); // lê o bit atual
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // obtém o bit mais significativo do registrador CRC
+
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if (xorBit == 1) {
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR; // aplica o polinomio gerador
+      } // fim do if
+
+    } // fim do for
+
+    // processamento dos 32 bits de 0 adicionais
+    for (int i = 0; i < 32; i++) {
+
+      int bitAtual = 0; // bits adicionais sao 0
+      int bitMaisSignificativo = (registradorCRC >> 31) & 1; // obtém o bit mais significativo do registrador CRC
+
+      int xorBit = bitMaisSignificativo ^ bitAtual; // calcula o bit de XOR
+
+      registradorCRC = registradorCRC << 1; // desloca o registrador para a esquerda
+
+      if (xorBit == 1) {
+        registradorCRC = registradorCRC ^ POLINOMIO_GERADOR; // aplica o polinomio gerador
+      } // fim do if
+
+    } // fim do for
+
+    int crcFinal = registradorCRC ^ VALOR_FINAL_XOR; // valor final do CRC apos o XOR final
+
+    // cria o novo quadro com o CRC anexado
+    int novoTotalBits = totalBits + 32;
+    int tamanhoArrayFinal = (novoTotalBits + 31) / 32;
+    int[] quadroComCRC = new int[tamanhoArrayFinal];
+
+    // copia os dados originais para o inicio do novo quadro
+    for (int i = 0; i < totalBits; i++) {
+      int bitAtual = ManipulacaoBits.lerBits(quadro, i, 1);
+      ManipulacaoBits.escreverBits(quadroComCRC, i, bitAtual, 1);
+    } // fim for
+
+    // anexa o CRC no final do quadro
+    ManipulacaoBits.escreverBits(quadroComCRC, totalBits, crcFinal, 32);
+
+    return quadroComCRC;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCRC
 
+  /**
+   * metodo que aplica o controle de erro com o codigo de Hamming
+   * 
+   * @param quadro quadro original a ser aplicado o controle
+   * @return quadro com o controle de erro aplicado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming(int quadro[]) {
-    // algum codigo aqui
-    return quadro;
+
+    int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
+
+    if (totalBits == 0) { // caso nao tenha bits validos, retorna quadro com 0
+      return new int[0];
+    }
+
+    // descobrir quantos bits de paridade serao necessarios
+    // formula 2^r >= (d+r+1); onde r -> quantidade de bits de paridade e d-> total
+    // de bits do quadro
+
+    int quantBitsParidade = 0;
+    while ((1 << quantBitsParidade) < (totalBits + quantBitsParidade + 1)) {
+      quantBitsParidade++;
+    } // fim while
+
+    // cria o array do quadro novo
+    int totalBitsHammming = totalBits + quantBitsParidade;
+    int tamanhoQuadroFinal = (totalBitsHammming + 31) / 32;
+    int[] quadroComHamming = new int[tamanhoQuadroFinal];
+
+    // posicionar os bits de paridade
+    int indiceBit = 0;
+
+    for (int posicao = 1; posicao <= totalBitsHammming; posicao++) { // posicao indexada no quadro hamming
+
+      // (posicao & (posicao - 1) eh um truque pra saber se a posicao eh par
+      if ((posicao & (posicao - 1)) == 0) {
+        continue; // pula as posicoes que sao potencia de 2. reservando o espaco
+      } else if (indiceBit < totalBits) { // se nao eh potencia de 2 entao eh espaco de dado
+
+        int bitDado = ManipulacaoBits.lerBits(quadro, indiceBit, 1);
+        ManipulacaoBits.escreverBits(quadroComHamming, posicao - 1, bitDado, 1);
+        indiceBit++;
+
+      }
+
+    } // fim for
+
+    // calcular e posicionar os bits de paridade, paridade PAR
+
+    for (int i = 0; i < quantBitsParidade; i++) {
+      int posBitParidade = 1 << i;
+      ; // Posicao do bit de paridade (1, 2, 4, 8, ...)
+
+      int contadorUns = 0;
+      // verifica os bits cobertos pela paridade
+      for (int bit = 1; bit <= totalBitsHammming; bit++) {
+
+        // verifica se o bit tem que ser verificado pelo BitDeParidade daquela posicao
+        if ((bit & posBitParidade) != 0) {
+          // nao contamos o proprio bit de paridade
+          if (bit != posBitParidade) {
+            if (ManipulacaoBits.lerBits(quadroComHamming, bit - 1, 1) == 1) {
+              contadorUns++;
+            } // fim if
+          } // fim if
+        } // fim if
+      } // fim for
+
+      // Define o bit de paridade p (em k-1) para garantir paridade PAR
+      if ((contadorUns % 2) != 0) {
+        ManipulacaoBits.escreverBits(quadroComHamming, posBitParidade - 1, 1, 1);
+      }
+
+    } // fim for
+
+    return quadroComHamming;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming
 
 } // fim da classe
