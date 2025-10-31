@@ -466,6 +466,12 @@ public class CamadaEnlaceDadosReceptora {
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar
 
+  /**
+   * metodo que verifica o erro dos quadros com o controle CRC
+   * 
+   * @param quadro quadro possivelmente com erro
+   * @return quadro verificado ou null caso erro detectado
+   */
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) {
 
     int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
@@ -533,6 +539,12 @@ public class CamadaEnlaceDadosReceptora {
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCRC
 
+  /**
+   * metodo que verifica e corrige os quadros com o controle de erro hamming
+   * 
+   * @param quadro quadro possivelmente com erro
+   * @return quadro corrigido
+   */
   public int[] CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming(int quadro[]) {
 
     int totalBitsReal = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
@@ -603,10 +615,11 @@ public class CamadaEnlaceDadosReceptora {
       }
     }
 
-    /* 
-    if (posicaoErro > 0) { // existe erro
-      return null;
-    } */
+    /*
+     * if (posicaoErro > 0) { // existe erro
+     * return null;
+     * }
+     */
 
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming

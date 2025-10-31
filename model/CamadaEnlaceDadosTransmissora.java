@@ -568,6 +568,12 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroComParidade;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroBitParidadeImpar
 
+  /**
+   * metodo que aplica o controle de erro com o polinomio CRC32
+   * 
+   * @param quadro quadro original a ser aplicado controle de erro
+   * @return quadro com controle de erro aplicado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCRC(int quadro[]) {
 
     int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
@@ -628,6 +634,12 @@ public class CamadaEnlaceDadosTransmissora {
     return quadroComCRC;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCRC
 
+  /**
+   * metodo que aplica o controle de erro com o codigo de Hamming
+   * 
+   * @param quadro quadro original a ser aplicado o controle
+   * @return quadro com o controle de erro aplicado
+   */
   public int[] CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming(int quadro[]) {
 
     int totalBits = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);
@@ -671,7 +683,8 @@ public class CamadaEnlaceDadosTransmissora {
     // calcular e posicionar os bits de paridade, paridade PAR
 
     for (int i = 0; i < quantBitsParidade; i++) {
-      int posBitParidade = 1 << i;; // Posicao do bit de paridade (1, 2, 4, 8, ...)
+      int posBitParidade = 1 << i;
+      ; // Posicao do bit de paridade (1, 2, 4, 8, ...)
 
       int contadorUns = 0;
       // verifica os bits cobertos pela paridade
