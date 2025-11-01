@@ -11,6 +11,14 @@ public class CamadaEnlaceDadosReceptora {
   private CamadaAplicacaoReceptora camadaAplicacaoReceptora;
   private ControlerTelaPrincipal controlerTelaPrincipal;
 
+  // referencias as camadas irmas que o Host precisa, para saber onde interpretar
+  // os ACKs
+  private AplicacaoTransmissora aplicacaoTransmissoraIrma;
+  private CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissoraIrma;
+
+  // constantes do protocolo
+  private final String ACK_PAYLOAD_STR = "ACK";
+
   /**
    * construtor da classe
    * 
@@ -23,6 +31,25 @@ public class CamadaEnlaceDadosReceptora {
     this.camadaAplicacaoReceptora = camadaAplicacaoReceptora;
     this.controlerTelaPrincipal = controlerTelaPrincipal;
   } // fim do construtor
+
+  /**
+   * metodo que define as camdas transmissoras irmas
+   * 
+   * @param camadaEnlaceDadosTransmissora camadam de enlace irma da camda atual
+   */
+  public void setCamadaEnlaceTransmissoraIrma(CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora) {
+    this.camadaEnlaceDadosTransmissoraIrma = camadaEnlaceDadosTransmissora;
+  }// fim do setCamadaEnlaceTransmissoraIrma
+
+  /**
+   * metodo que define as aplicacoes transmissoras irmas
+   * 
+   * @param aplicacaoTransmissora a aplicacao transmissora que deve ser irma da
+   *                              aplicacao atual
+   */
+  public void setAplicacaoTransmissoraIrma(AplicacaoTransmissora aplicacaoTransmissora) {
+    this.aplicacaoTransmissoraIrma = aplicacaoTransmissora;
+  }// fim do setAplicacaoTransmissoraIrma
 
   /**
    * metodo responsavel por receber o quadro da camada fisica e processa-lo
@@ -54,16 +81,8 @@ public class CamadaEnlaceDadosReceptora {
 
     int[] quadroDesenquadrado = CamadaEnlaceDadosReceptoraEnquadramento(quadroVerificado); // desenquadra o quadro
 
-    // CamadaEnlaceDadosReceptoraControleDeFluxo(quadroVerificado); // controla o
-    // fluxo de dados
+    CamadaEnlaceDadosReceptoraControleDeFluxo(quadroDesenquadrado); // controla o fluxo de dados
 
-    System.out.println("Camada Enlace Receptora: Quadro valido. Enviando para a Aplicacao.");
-
-    // chama proxima camada
-    this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o quadro para a proxima camada
-
-    // this.camadaAplicacaoReceptora.receberQuadro(quadroDesenquadrado); // envia o
-    // quadro para a proxima camada
   } // fim do metodo receberQuadro
 
   /**
@@ -114,8 +133,44 @@ public class CamadaEnlaceDadosReceptora {
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErro
 
+  /**
+   * metodo que sabe se o quadro eh de dados ou um ack, envia os acks e repassa os
+   * dados para a proxima camada
+   * 
+   * @param quadro quadro recebido que ta tendo o fluxo controlad 
+   */
   public void CamadaEnlaceDadosReceptoraControleDeFluxo(int quadro[]) {
-    // algum codigo aqui
+    // converte mensagem quadro para String para verificar se eh um ACK ou nao, caso
+    // nao seja um ACK entao eh uma mensagem que ta sendo enviada pra B
+    String payload = ManipulacaoBits.intAgrupadoParaString(quadro);
+    if (payload.equals(ACK_PAYLOAD_STR)) {
+      // eh um ACK
+      System.out.println("CAMADA ENLACE RECEPTORA - ACK recebido");
+
+      // notifica a camada transmissora irma, para ela saber que tem um ACK chegando
+      // para ela
+      if (this.camadaEnlaceDadosTransmissoraIrma != null) {
+        // verificacao de seguranca
+        this.camadaEnlaceDadosTransmissoraIrma.receberAck();
+      } // fim if
+
+    } else {
+      // se nao eh ACK eh quadro
+      System.out.println("CAMADA ENLACE RECEPTORA: Dados validos recebidos passando para aplicacao");
+
+      if (this.camadaAplicacaoReceptora != null) {
+        // envia o quadro pra proxima camada
+        this.camadaAplicacaoReceptora.receberQuadro(quadro);
+      } // fim do if
+
+      // como dados foram recebidos e estao validos, envia o ack para a transmissora
+      System.out.println("CAMADA ENLACE RECEPTORA: Enviando ACK de volta...");
+      if (this.aplicacaoTransmissoraIrma != null) {
+        // Usa a pilha de transmissão irma, para enviar o ACK pelo mesmo caminho
+        this.aplicacaoTransmissoraIrma.iniciarTransmissao(ACK_PAYLOAD_STR);
+      } // fimif
+
+    } // fim if/else
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeFluxo
 
   /**

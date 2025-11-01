@@ -34,7 +34,12 @@ public class CamadaAplicacaoTransmissora {
     int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem para array de int
     this.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro);
 
-    this.camadaEnlaceDadosTransmissora.transmitirQuadro(quadro); // envia o quadro para a proxima camada
+    if (mensagem.equals("ACK")) { // se a mensagem a ser transmitida for o ACK, chama o metodo proprio para ACK
+      this.camadaEnlaceDadosTransmissora.transmitirACK(quadro);
+    } else { // caso contrario age normal
+      this.camadaEnlaceDadosTransmissora.transmitirQuadro(quadro); // envia o quadro para a proxima camada
+    } // fim if/else
+
   }// fim do metodo transmitirMensagem
 
 } // fim da classe CamadaAplicacaoTransmissora

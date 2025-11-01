@@ -1,13 +1,6 @@
 package controller;
 
 import model.AplicacaoReceptora;
-import model.AplicacaoTransmissora;
-import model.CamadaAplicacaoReceptora;
-import model.CamadaAplicacaoTransmissora;
-import model.CamadaEnlaceDadosReceptora;
-import model.CamadaEnlaceDadosTransmissora;
-import model.CamadaFisicaReceptora;
-import model.CamadaFisicaTransmissora;
 import model.MeioDeComunicacao;
 
 /**
@@ -15,65 +8,62 @@ import model.MeioDeComunicacao;
  */
 public class ControleRede {
 
-	// usada para aturalizar a interface grafica
+	// referencia ao controle da UI
 	private ControlerTelaPrincipal controlerTelaPrincipal;
+	// instancia dos 2 Hosts
+	private Host hostA;
+	private Host hostB;
 
-	// pilha de Transmissao
-	private AplicacaoTransmissora aplicacaoTransmissora;
-	private CamadaAplicacaoTransmissora camadaAplicacaoTransmissora;
-	private CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora;
-	private CamadaFisicaTransmissora camadaFisicaTransmissora;
+	// ponta final da transmissao de A para B
+	private AplicacaoReceptora appReceptoraHostB;
 
-	// pilha de Recepcao
-	private AplicacaoReceptora aplicacaoReceptora;
-	private CamadaAplicacaoReceptora camadaAplicacaoReceptora;
-	private CamadaEnlaceDadosReceptora camadaEnlaceDadosReceptora;
-	private CamadaFisicaReceptora camadaFisicaReceptora;
+	// ponta final da transmissao B para A
+	private AplicacaoReceptora appReceptoraHostA;
 
-	// meio de Comunicacao Central
+	// instancia do meio de comunicacao usado na transmissao
 	private MeioDeComunicacao meioDeComunicacao;
 
 	public ControleRede(ControlerTelaPrincipal controlerTelaPrincipal) {
 
 		this.controlerTelaPrincipal = controlerTelaPrincipal;
 
-		// montar a infraestrutura de rede
+		// cria as pontas das comunicacaoes (as caixas de texto)
 
-		// passa o controleTelaPricipal para as cmadas que precisam atualizar a
-		// interface grafica
+		// na simulacao HostB vai ser quem recebe a mensagem e envia o ACK entao ele
+		// precisa atualizar o UI
+		this.appReceptoraHostB = new AplicacaoReceptora(this.controlerTelaPrincipal);
 
-		// recepcao
-		this.aplicacaoReceptora = new AplicacaoReceptora(this.controlerTelaPrincipal);
-		this.camadaAplicacaoReceptora = new CamadaAplicacaoReceptora(this.aplicacaoReceptora, this.controlerTelaPrincipal);
-		this.camadaEnlaceDadosReceptora = new CamadaEnlaceDadosReceptora(this.camadaAplicacaoReceptora,
+		// na simulacao o HostA eh quem transmite e recebe o Ack entao nao precisa
+		// exibir nada na tela
+		this.appReceptoraHostA = new AplicacaoReceptora(null);
+
+		// cria os dois hosts
+		// HostA = Transmissor da nossa simulacao
+		this.hostA = new Host(this.controlerTelaPrincipal, "HostA", this.appReceptoraHostA);
+
+		// HostB = Receptor da nossa simulacao
+		this.hostB = new Host(this.controlerTelaPrincipal, "HostB", this.appReceptoraHostB);
+
+		// cria o meio de comunicacao que sera usado tanto para transmitir a mensagem
+		// quanto o ACK
+		// precisa ter conhecimento das camadas fisicas dos hosts
+		this.meioDeComunicacao = new MeioDeComunicacao(this.hostA.camadaFisicaTransmissora,
+				this.hostA.camadaFisicaReceptora, this.hostB.camadaFisicaTransmissora, this.hostB.camadaFisicaReceptora,
 				this.controlerTelaPrincipal);
-		this.camadaFisicaReceptora = new CamadaFisicaReceptora(this.camadaEnlaceDadosReceptora,
-				this.controlerTelaPrincipal);
 
-		// transmissao
-		this.camadaFisicaTransmissora = new CamadaFisicaTransmissora(this.controlerTelaPrincipal);
-		this.camadaEnlaceDadosTransmissora = new CamadaEnlaceDadosTransmissora(this.camadaFisicaTransmissora,
-				this.controlerTelaPrincipal);
-		this.camadaAplicacaoTransmissora = new CamadaAplicacaoTransmissora(this.camadaEnlaceDadosTransmissora,
-				this.controlerTelaPrincipal);
-		this.aplicacaoTransmissora = new AplicacaoTransmissora(this.camadaAplicacaoTransmissora);
-
-		// meio de comunicacao
-		this.meioDeComunicacao = new MeioDeComunicacao(this.camadaFisicaTransmissora, this.camadaFisicaReceptora, this.controlerTelaPrincipal);
-
-		// informa as camadas fisicas sobre o meio que elas devem usar
-		this.camadaFisicaTransmissora.setMeioDeComunicacao(this.meioDeComunicacao);
-		this.camadaFisicaReceptora.setMeioDeComunicacao(this.meioDeComunicacao);
+		// conecta os hosts ao meio de comunicacao
+		this.hostA.setMeioDeComunicacao(this.meioDeComunicacao);
+		this.hostB.setMeioDeComunicacao(this.meioDeComunicacao);
 
 	} // fim construtor
 
 	/**
-	 * metodo que inicia a simulacao de transmissao de dados na rede
+	 * metodo que inicia simulacao, comunicacao entre hostA enviando uma mensagem
 	 * 
-	 * @param mensagem mensagem a ser transmitida
+	 * @param mensagem mensagem as ser transmitida
 	 */
 	public void iniciarSimulacao(String mensagem) {
-		this.aplicacaoTransmissora.iniciarTransmissao(mensagem);
-	}// fim metodo iniciarSimulacao
+		this.hostA.enviarMensagem(mensagem);
+	}// fim de iniciarSimulacao
 
 } // fim classe ControleRede
