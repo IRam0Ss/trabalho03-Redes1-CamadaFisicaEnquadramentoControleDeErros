@@ -10,24 +10,49 @@ import java.util.Random;
  */
 public class MeioDeComunicacao {
 
-  // referncias para os dois lados da comunicacao
-  private CamadaFisicaReceptora receptor;
-  private CamadaFisicaTransmissora transmissor;
   private ControlerTelaPrincipal controlerTelaPrincipal;
   private Random random;
 
+  // referencia para todas as "4 camadas fisicas", obs: cada 2 camdas fisicas eh
+  // usada para simular uma camdaFisica completa, em outras palavras ele tem a
+  // referencia para 2 camadas fisicas a do hostA e do HostB
+
+  private CamadaFisicaReceptora fisicaReceptoraHostA;
+  private CamadaFisicaTransmissora fisicaTransmissoraHostA;
+
+  private CamadaFisicaReceptora fisicaReceptoraHostB;
+  private CamadaFisicaTransmissora fisicaTransmissoraHostB;
+
   /**
-   * construtor da classe
+   * construtor da classe, sabe de onde pra onde a comunicacao flui
    * 
-   * @param transmissor referencia para o transmissor da mensagem
-   * @param receptor    referencia para o receptor da mensagem
+   * @param fisicaTransmissoraHostA referencia a camada fisica do hostA
+   * @param fisicaReceptoraHostA    referencia a camada fisica do hostA
+   * @param fisicaTransmissoraHostB referencia a camada fisica do hostB
+   * @param fisicaReceptoraHostB    referencia a camada fisica do hostB
+   * @param controlerTelaPrincipal  referencia ao controle da UI
    */
-  public MeioDeComunicacao(CamadaFisicaTransmissora transmissor, CamadaFisicaReceptora receptor,
+  public MeioDeComunicacao(CamadaFisicaTransmissora fisicaTransmissoraHostA,
+      CamadaFisicaReceptora fisicaReceptoraHostA,
+      CamadaFisicaTransmissora fisicaTransmissoraHostB,
+      CamadaFisicaReceptora fisicaReceptoraHostB,
       ControlerTelaPrincipal controlerTelaPrincipal) {
-    this.transmissor = transmissor;
-    this.receptor = receptor;
+
+    // cria as instancias
+    this.fisicaTransmissoraHostA = fisicaTransmissoraHostA;
+    this.fisicaReceptoraHostA = fisicaReceptoraHostA;
+    this.fisicaTransmissoraHostB = fisicaTransmissoraHostB;
+    this.fisicaReceptoraHostB = fisicaReceptoraHostB;
+
     this.controlerTelaPrincipal = controlerTelaPrincipal;
     this.random = new Random();
+
+    // seguranca de que as camdas fisicas saberao o meio de comunicacao usado
+    this.fisicaTransmissoraHostA.setMeioDeComunicacao(this);
+    this.fisicaReceptoraHostA.setMeioDeComunicacao(this);
+    this.fisicaTransmissoraHostB.setMeioDeComunicacao(this);
+    this.fisicaReceptoraHostB.setMeioDeComunicacao(this);
+
   } // fim construtor
 
   /**
@@ -36,16 +61,19 @@ public class MeioDeComunicacao {
    * @param fluxoBrutoDeBits fluxoBruto de bits que represneta o sinal
    *                         codificado
    *                         pela camada anterior
+   * @param remetente        que mandou a mensagem
    */
-  public void transmitirMensagem(int fluxoBrutoDeBits[]) {
+  public void transmitirMensagem(int fluxoBrutoDeBits[], CamadaFisicaTransmissora remetente) {
+
+    // transferir bits e aplicar erro
 
     double taxaErro = this.controlerTelaPrincipal.getValorTaxaErro();
 
-    int[] fluxoBrutoDeBitsPontoA = fluxoBrutoDeBits;
-    int[] fluxoBrutoDeBitsPontoB = new int[fluxoBrutoDeBitsPontoA.length]; // array de destino tem o mesmo tamanho do
+    int[] fluxoBrutoDeBitsPontoInicial = fluxoBrutoDeBits;
+    int[] fluxoBrutoDeBitsPontoFinal = new int[fluxoBrutoDeBitsPontoInicial.length]; // array de destino tem o mesmo tamanho do
                                                                            // array partida
 
-    int totalDeBits = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoA);
+    int totalDeBits = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoInicial);
     int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
     int tipoDeControleDeErro = this.controlerTelaPrincipal.opcaoControleErroSelecionada();
     int tipoDeCodificacao = this.controlerTelaPrincipal.opcaoSelecionada();
@@ -64,7 +92,8 @@ public class MeioDeComunicacao {
       case 0: // Contagem de Caracteres (32 bits de dados + 8 bits de cabecalho)
         tamanhoPosEnquadramento = 40;
         break;
-      case 1: // Insercao de Bytes e Bits (vamos assumir que 32 bits + 8 da flag de inicio + 8 da
+      case 1: // Insercao de Bytes e Bits (vamos assumir que 32 bits + 8 da flag de inicio + 8
+              // da
               // flag de fim = 48 bits com flags)
       case 2:
         tamanhoPosEnquadramento = 48;
@@ -134,7 +163,7 @@ public class MeioDeComunicacao {
       } // fim if
 
       // le o bit do A
-      int bit = ManipulacaoBits.lerBits(fluxoBrutoDeBitsPontoA, i, 1);
+      int bit = ManipulacaoBits.lerBits(fluxoBrutoDeBitsPontoInicial, i, 1);
 
       // verifica se este bit deve ser corrompido
       if (i == posicaoDoErroNesteQuadro) {
@@ -146,7 +175,7 @@ public class MeioDeComunicacao {
       } // fim if
 
       // escreve o bit no B
-      ManipulacaoBits.escreverBits(fluxoBrutoDeBitsPontoB, i, bit, 1);
+      ManipulacaoBits.escreverBits(fluxoBrutoDeBitsPontoFinal, i, bit, 1);
 
     } // fim for
 
@@ -156,9 +185,36 @@ public class MeioDeComunicacao {
     System.out.println("--- RELATORIO DO MEIO DE COMUNICACAO (DEBUG) ---");
     System.out.println(relatorio.toString());
 
-    this.controlerTelaPrincipal
-        .desenharSinalTransmissao(ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoA, totalDeBits));
-    this.receptor.receberQuadro(fluxoBrutoDeBitsPontoB);
+    // fim da transferencia com aplicacao de erro, se tiver erro o
+    // fluxoBrutoBitsPontoB ja tem eles
+
+    // define quem mandou a mensagem pra saber se foi o hostA e a mensagem tem que
+    // ir para B ou se foi o HostB mandando um ACK que tem que ser recebido por A
+    if (remetente == this.fisicaTransmissoraHostA) {
+      // se foi o hostA que enviou os dados:
+      System.out.println("MEIO: Enviando A -> B");
+
+      // faz a animacao
+      int totalBitsEnviados = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoFinal);
+      this.controlerTelaPrincipal
+          .desenharSinalTransmissao(ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoFinal, totalBitsEnviados));
+
+      // entrega a mensagem de A para B
+      this.fisicaReceptoraHostB.receberQuadro(fluxoBrutoDeBitsPontoFinal);
+
+    } // fim if
+    else if (remetente == this.fisicaTransmissoraHostB) {
+      // se foi op hostB que enviou algo, entao eh o ACK na nossa simulacao, entrega o
+      // ACK para o HostA
+
+      System.out.println("MEIO: Enviando (ACK) B -> A ");
+
+      // nao realiza animacao do quadro de ack (talvez implementar isso no proximo)
+
+      // entrega o ack de B para A
+      this.fisicaReceptoraHostA.receberQuadro(fluxoBrutoDeBitsPontoFinal);
+    } // fim else/if
+
   } // fim do MeioComunicacao
 
 } // fim da classe

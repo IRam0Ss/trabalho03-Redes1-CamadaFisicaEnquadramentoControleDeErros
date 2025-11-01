@@ -1,5 +1,10 @@
 package model;
 
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import controller.ControlerTelaPrincipal;
 import util.ManipulacaoBits;
 
@@ -11,6 +16,25 @@ public class CamadaEnlaceDadosTransmissora {
 
   private CamadaFisicaTransmissora camadaFisicaTransmissora;
   private ControlerTelaPrincipal controlerTelaPrincipal;
+
+  // constantes do protocolo de ACK e Temporizador, STOP ADN WAIT
+  // fiz stop and wasit porque eh oq mais se aproxima do janela dezlizante de 1
+  // bit
+
+  // tempo de espera escolhido arbitrariamente em um mundo real esse
+  // tempo seria calculado com base na larghura de banda e velocidade de
+  // transmissao do fio
+  private final int TIMEOUT_MILISEGUNDOS = 3000;
+
+  // maquina de estados
+  private volatile String estado = "PRONTO_PARA_ENVIAR"; // estado varia entre PRONTO_PARA_ENVIAR e ESPERANDO_ACK
+
+  // fila de envio e quadro em espera
+  private Queue<int[]> filaDeEnvio = new LinkedList<>();
+  private int[] quadroEmEspera;
+
+  // timer
+  private Timer timer;
 
   /**
    * construtor da classe
@@ -35,6 +59,12 @@ public class CamadaEnlaceDadosTransmissora {
     // debug
     System.out.println("Camada de Enlace TX: Recebi " + quadro.length + " inteiros para transmitir.");
 
+    // limpa a fila de transmissao anteriores e cancela os timers. Se clicar 2 vezes
+    // em transmitir pra resetar tudo
+    cancelarTimer();
+    filaDeEnvio.clear();
+    estado = "PRONTO_PARA_ENVIAR";
+
     // trata cada int ou seja cada 32 bits de carga util como sendo um subquadro
     for (int i = 0; i < quadro.length; i++) {
 
@@ -55,16 +85,37 @@ public class CamadaEnlaceDadosTransmissora {
       // aplica controle de erro
       int[] quadroComControleDeErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
 
-      // 3. APLICA CONTROLE DE FLUXO (Stub de Teste)
-      // Este metodo, por agora, apenas envia para a proxima camada.
-      // Ele NAO espera pelo ACK, permitindo testar o fluxo.
-      CamadaEnlaceDadosTransmissoraControleDeFluxo(quadroComControleDeErro);
-
+      // Aplica controle de fluxo
+      filaDeEnvio.add(quadroComControleDeErro);
     } // fim for
 
-    System.out.println("Camada de Enlace TX: Todos os sub-quadros foram disparados.");
+    // agora a fila tem todos os quadros que precisam ser enviados
+    // inicia o controle de fluxo, usando a logica StopAndWait
+    System.out.println("Enlace TX: Fila preenchida. Iniciando motor Stop-and-Wait...");
+    CamadaEnlaceDadosTransmissoraControleDeFluxo();
 
   }// fim e transmitirQuadro
+
+  /**
+   * metodo paralelo que envia o ACK sem passar pelo controle de fluxo
+   * 
+   * @param quadro
+   */
+  public void transmitirACK(int[] quadro) {
+    System.out.println("ENLACE DADOS TRANSMISSORA: enviando ACK");
+
+    // trata Ack como um unico subquadro
+    if (quadro.length == 0) {
+      return; // quadro vazio nao faz nada
+    } // fim, if
+
+    int[] quadroEnquadrado = CamadaEnlaceDadosTransmissoraEnquadramento(quadro);
+    int[] quadroComControleErro = CamadaEnlaceDadosTransmissoraControleDeErro(quadroEnquadrado);
+
+    // envia diretamente para evitar loop, nao faz sentido ficar esperando um ack
+    // para um ack
+    this.camadaFisicaTransmissora.transmitirQuadro(quadroComControleErro);
+  } // fim do transmitirACK
 
   /**
    * metodo que escolhe o tipo de enquadramento a ser aplicado na mensagem
@@ -130,10 +181,74 @@ public class CamadaEnlaceDadosTransmissora {
 
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErro
 
-  public void CamadaEnlaceDadosTransmissoraControleDeFluxo(int quadro[]) {
-    System.out.println("Enlace TX (Controle de Fluxo): Enviando quadro para a Camada Fisica.");
-    this.camadaFisicaTransmissora.transmitirQuadro(quadro);
+  public void CamadaEnlaceDadosTransmissoraControleDeFluxo() {
+
+    enviarProximoDaFila();
+
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeFluxo
+
+  /**
+   * metodo que funciona como a logica basica do Stop and Wait, analisa a fila e
+   * envia os quadros em ordem
+   * Chamado pelo controle de Fluxo
+   */
+  private synchronized void enviarProximoDaFila() {
+
+    if (estado.equals("PRONTO_PARA_ENVIAR") && !filaDeEnvio.isEmpty()) {
+      // se tem quadros a serem enviados e a camada do transmissor ta pronta para
+      // enviar quadros
+      this.quadroEmEspera = filaDeEnvio.poll(); // pega o primeiro da fila
+      this.estado = "ESPERANDO_ACK"; // muda o estado do transmissor para esperar o ACK
+
+      System.out.println("CAMADA DE ENLACE TX: Enviando o proximo da fila ... ");
+      this.camadaFisicaTransmissora.transmitirQuadro(quadroEmEspera); // envia o quadro
+      iniciarTimer();
+    } else if (estado.equals("PRONTO_PARA_ENVIAR") && filaDeEnvio.isEmpty()) {
+      // se a fila ta vazia e ta pronto pra enviar, a transmissao acabou
+      System.out.println("ENLACE TX: Fila de envio vazia. Transmissão concluída.");
+    } // fim else/if
+
+  } // fim metodo enviarProximoDaFila
+
+  /**
+   * metodo responsavel por inicializar um timer, start numa thread que espera o
+   * tempo ate a chegada do ACk de confirmacao e chama tratarTimeOut caso o tempo
+   * acabe
+   */
+  private void iniciarTimer() {
+    cancelarTimer(); // finaliza qualquer timerr anterior
+    timer = new Timer(); // cria um timer
+    timer.schedule(new TimerTask() {
+      @Override
+      public void run() { // cria a thread que vai controlar o tempo de espera para recebimento do ACK
+        tratarTimeOut(); // trata oque acontece quanmdo o tempo acabar
+      }
+    }, TIMEOUT_MILISEGUNDOS);
+  } // fim do iniciarTimer
+
+  /**
+   * metodo que cancela o timer atual e o reseta
+   */
+  private void cancelarTimer() {
+    if (timer != null) { // se existe um timer, cancele ele
+      timer.cancel();
+      timer = null;
+    } // fim if
+  }// fim metodo cancelarTimer
+
+  /**
+   * quando o tempo do timer acaba, ele reenvia o quadro pois o ack nao chegou e
+   * reinicia um novo timer
+   */
+  private synchronized void tratarTimeOut() {
+    if (!estado.equals("ESPERANDO_ACK")) {
+      return; // se nao esta esperando o ACK entao nao faz nada, seguranca
+    } // fim if
+
+    System.out.println("ENLACE TRANSMISSORA: TIMEOUT!! tempo de espera pelo ack acabou, reenviuando quadro ... ");
+    this.camadaFisicaTransmissora.transmitirQuadro(this.quadroEmEspera);
+    iniciarTimer(); // recomeca o timer
+  }// fim metodo
 
   /**
    * metodo que realiza o enquadramento por contagem de caracteres
@@ -710,5 +825,25 @@ public class CamadaEnlaceDadosTransmissora {
 
     return quadroComHamming;
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErroCodigoDeHamming
+
+  /**
+   * metodo que garente que acks recebidos matarao o timer certo para nao entrar
+   * em loop de reenvio constante
+   */
+  public synchronized void receberAck() {
+    if (!estado.equals("ESPERANDO_ACK")) {
+      System.out.println("Enlace TX: ACK inesperado recebido. Ignorando.");
+      return;
+    } // fim do if
+
+    System.out.println("Enlace TX: ACK Válido recebido!");
+
+    cancelarTimer(); // finaliza o timer
+    estado = "PRONTO_PARA_ENVIAR";// muda o estado para liberar envio do proximo
+    quadroEmEspera = null; // libera o buffer
+
+    CamadaEnlaceDadosTransmissoraControleDeFluxo(); // chama o controle de fluxo
+
+  }
 
 } // fim da classe
