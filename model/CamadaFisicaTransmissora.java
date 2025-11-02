@@ -89,7 +89,7 @@ public class CamadaFisicaTransmissora {
       this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoBitsExibir);
     });
 
-    // ao transmitir, passa si mesma para que o meio saiba quem transmitiu
+    // manda pra proxima camada
     meioDeComunicacao.transmitirMensagem(fluxoBrutoDeBits, this);
   } // fim do construtor
 

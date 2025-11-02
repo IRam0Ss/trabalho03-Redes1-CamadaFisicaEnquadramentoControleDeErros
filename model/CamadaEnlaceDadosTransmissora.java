@@ -177,6 +177,11 @@ public class CamadaEnlaceDadosTransmissora {
 
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErro
 
+  /**
+   * metodo de controle de fluxo, controla a logica de ack e retransmissao
+   * 
+   * @throws ErroDeVerificacaoException trata os erros 
+   */
   public void CamadaEnlaceDadosTransmissoraControleDeFluxo() throws ErroDeVerificacaoException {
 
     enviarProximoDaFila();
@@ -211,7 +216,7 @@ public class CamadaEnlaceDadosTransmissora {
    * tempo ate a chegada do ACk de confirmacao e chama tratarTimeOut caso o tempo
    * acabe
    */
-  private void iniciarTimer() throws ErroDeVerificacaoException{
+  private void iniciarTimer() throws ErroDeVerificacaoException {
     cancelarTimer(); // finaliza qualquer timerr anterior
     timer = new Timer(); // cria um timer
     timer.schedule(new TimerTask() {
@@ -240,7 +245,7 @@ public class CamadaEnlaceDadosTransmissora {
    * quando o tempo do timer acaba, ele reenvia o quadro pois o ack nao chegou e
    * reinicia um novo timer
    */
-  private synchronized void tratarTimeOut() throws ErroDeVerificacaoException{
+  private synchronized void tratarTimeOut() throws ErroDeVerificacaoException {
     if (!estado.equals("ESPERANDO_ACK")) {
       return; // se nao esta esperando o ACK entao nao faz nada, seguranca
     } // fim if
@@ -830,7 +835,7 @@ public class CamadaEnlaceDadosTransmissora {
    * metodo que garente que acks recebidos matarao o timer certo para nao entrar
    * em loop de reenvio constante
    */
-  public synchronized void receberAck() throws ErroDeVerificacaoException{
+  public synchronized void receberAck() throws ErroDeVerificacaoException {
     if (!estado.equals("ESPERANDO_ACK")) {
       System.out.println("Enlace TX: ACK inesperado recebido. Ignorando.");
       return;
