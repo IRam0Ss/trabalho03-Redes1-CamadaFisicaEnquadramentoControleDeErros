@@ -2,7 +2,7 @@
 * Autor............: Iury Ramos Sodre 
 * Matricula........: 202310440
 * Inicio...........: 22/09/2025
-* Ultima alteracao.: 29/09/2025
+* Ultima alteracao.: 02/11/2025
 * Nome.............: E.D.E.N. (sistema de simulacao de transmicao de sinais)
 * Funcao...........: simula a transmissao de sinais que acontece numa rede.
 *************************************************************** */
@@ -14,7 +14,12 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import util.ManipulacaoBits;
+import util.ErroDeVerificacaoException;
+
 import controller.ControlerTelaPrincipal;
+import controller.ControleRede;
+import controller.Host;
+
 import model.AplicacaoReceptora;
 import model.AplicacaoTransmissora;
 import model.CamadaAplicacaoReceptora;

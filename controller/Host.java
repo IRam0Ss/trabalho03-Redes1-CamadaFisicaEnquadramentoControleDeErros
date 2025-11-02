@@ -9,6 +9,7 @@ import model.CamadaEnlaceDadosTransmissora;
 import model.CamadaFisicaReceptora;
 import model.CamadaFisicaTransmissora;
 import model.MeioDeComunicacao;
+import util.ErroDeVerificacaoException;
 
 /**
  * representa um no da rede, um dos computadores com toda a arquitetura de
@@ -61,6 +62,9 @@ public class Host {
 				controlerTelaPrincipal);
 		this.aplicacaoTransmissora = new AplicacaoTransmissora(this.camadaAplicacaoTransmissora);
 
+		// conexao para que a camada fisica saiba quem eh a superior 
+		this.camadaFisicaTransmissora.setCamadaEnlaceSuperior(this.camadaEnlaceDadosTransmissora);
+
 		// conexoes virtuais para que as camdas irmas se conhecam, saibam onde o ACK tem
 		// que chegar
 		this.camadaEnlaceDadosReceptora.setCamadaEnlaceTransmissoraIrma(this.camadaEnlaceDadosTransmissora);
@@ -88,7 +92,7 @@ public class Host {
 	 * 
 	 * @param mensagem mensagem a ser enviada
 	 */
-	public void enviarMensagem(String mensagem) {
+	public void enviarMensagem(String mensagem) throws ErroDeVerificacaoException{
 		System.out.println(nome + ": Iniciando transmissão de DADOS.");
 		this.aplicacaoTransmissora.iniciarTransmissao(mensagem);
 	}// fim enviarMensagem

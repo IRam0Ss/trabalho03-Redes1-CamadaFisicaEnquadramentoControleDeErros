@@ -4,6 +4,7 @@ import controller.ControlerTelaPrincipal;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 public class CamadaEnlaceDadosReceptora {
@@ -56,26 +57,32 @@ public class CamadaEnlaceDadosReceptora {
    * 
    * @param quadro quadro recebido da camada fisica com enquadramento e controle
    *               de erro incluidos
+   * @throws ErroDeVerificacaoException trata os erros 
    */
-  public void receberQuadro(int[] quadro) {
+  public void receberQuadro(int[] quadro) throws ErroDeVerificacaoException {
 
-    int[] quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadro); // verifica erros no quadro
+    int[] quadroVerificado;
 
-    if (quadroVerificado == null) {
-      // Se o quadro for invalido descarta
-      System.out.println("Camada Enlace Receptora: ERRO DETECTADO. Quadro descartado.");
+    try {
+      // tenta verificar o erro
+      quadroVerificado = CamadaEnlaceDadosReceptoraControleDeErro(quadro);
+
+    } catch (ErroDeVerificacaoException e) {
+      // Passo 2: Se uma excecao foi lancada, o quadro esta corrompido!
+
+      System.out.println("Camada Enlace Receptora: ERRO DETECTADO. " + e.getTitulo());
 
       // informar o usuario, da deteccao de erros
       Platform.runLater(() -> {
         Alert alert = new Alert(AlertType.WARNING);
         alert.setTitle("Deteccao de Erro");
-        alert.setHeaderText("QUADRO CORROMPIDO!");
-        alert.setContentText("A Camada de Enlace Receptora detectou um erro no quadro recebido e o descartou.");
+        alert.setHeaderText(e.getTitulo()); // <-- MENSAGEM PERSONALIZADA
+        alert.setContentText(e.getMensagem()); // <-- MENSAGEM PERSONALIZADA
         alert.show();
       });
 
       return; // sai do metodo sem processar o quadro
-    } // fim if
+    } // fim try-catch
 
     // se chegou aqui o quadro esta valido
 
@@ -113,7 +120,14 @@ public class CamadaEnlaceDadosReceptora {
 
   }// fim do metodo CamadaEnlaceDadosReceptoraEnquadramento
 
-  public int[] CamadaEnlaceDadosReceptoraControleDeErro(int quadro[]) {
+  /**
+   * metodo que detecta e defin e qual verificacao de erro sera aplicada ao quadro
+   * 
+   * @param quadro quadro recebido
+   * @return o quadro verificado e com os bits de verificacao removidos
+   * @throws ErroDeVerificacaoException trata os erros detectados
+   */
+  public int[] CamadaEnlaceDadosReceptoraControleDeErro(int quadro[]) throws ErroDeVerificacaoException {
     int tipoDeControleDeErro = this.controlerTelaPrincipal.opcaoControleErroSelecionada();
     int[] quadroVerificado = null;
     switch (tipoDeControleDeErro) {
@@ -137,9 +151,9 @@ public class CamadaEnlaceDadosReceptora {
    * metodo que sabe se o quadro eh de dados ou um ack, envia os acks e repassa os
    * dados para a proxima camada
    * 
-   * @param quadro quadro recebido que ta tendo o fluxo controlad 
+   * @param quadro quadro recebido que ta tendo o fluxo controlad
    */
-  public void CamadaEnlaceDadosReceptoraControleDeFluxo(int quadro[]) {
+  public void CamadaEnlaceDadosReceptoraControleDeFluxo(int quadro[]) throws ErroDeVerificacaoException {
     // converte mensagem quadro para String para verificar se eh um ACK ou nao, caso
     // nao seja um ACK entao eh uma mensagem que ta sendo enviada pra B
     String payload = ManipulacaoBits.intAgrupadoParaString(quadro);
@@ -423,13 +437,15 @@ public class CamadaEnlaceDadosReceptora {
    * @param quadro quadro recebido
    * @return quadro verificado, e removido os bits de controle, ou nulo se
    *         detectar erro
+   * @throws ErroDeVerificacaoException classe que trata os erros de verificacao
    */
-  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[]) {
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadePar(int quadro[])
+      throws ErroDeVerificacaoException {
 
     int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
 
     if (totalBitsRecebidos == 0) {
-      return quadro;
+      throw new ErroDeVerificacaoException("QUADRO COM 0 BITS", "quadro nao possui bits!");
     }
 
     int totalBitsReaisVerificar = totalBitsRecebidos - 7; // remove os bits de padding
@@ -445,7 +461,8 @@ public class CamadaEnlaceDadosReceptora {
 
     if (contadorUns % 2 != 0) {
       // se o numero de uns for impar, entao houve erro
-      return null; // retorna nulo para indicar erro
+      throw new ErroDeVerificacaoException("ERRO BIT DE PARIDADE PAR!!",
+          "O quadro recebido possui um numero impares de bits '1', a verificacao esperava um numero par. \n QUADRO DESCARTADO!!");
     }
 
     // nao teve erro
@@ -476,13 +493,15 @@ public class CamadaEnlaceDadosReceptora {
    * @param quadro quadro recebido
    * @return quadro verificado, e removido os bits de controle, ou nulo se
    *         detectar erro
+   * @throws ErroDeVerificacaoException trata os erros
    */
-  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[]) {
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroBitDeParidadeImpar(int quadro[])
+      throws ErroDeVerificacaoException {
 
     int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
 
     if (totalBitsRecebidos == 0) {
-      return quadro;
+      throw new ErroDeVerificacaoException("QUADRO COM 0 BITS", "quadro nao possui bits!");
     }
 
     int totalBitsReaisVerificar = totalBitsRecebidos - 7; // remove os bits de padding
@@ -498,7 +517,8 @@ public class CamadaEnlaceDadosReceptora {
 
     if (contadorUns % 2 == 0) {
       // se o numero de uns for par, entao houve erro
-      return null; // retorna nulo para indicar erro
+      throw new ErroDeVerificacaoException("ERRO BIT DE PARIDADE IMPAR!!",
+          "O quadro recebido possui um numero par de bits '1', a verificacao esperava um numero impar. \n QUADRO DESCARTADO!!");
     }
 
     // nao teve erro
@@ -526,8 +546,9 @@ public class CamadaEnlaceDadosReceptora {
    * 
    * @param quadro quadro possivelmente com erro
    * @return quadro verificado ou null caso erro detectado
+   * @throws ErroDeVerificacaoException trata os erros
    */
-  public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) {
+  public int[] CamadaEnlaceDadosReceptoraControleDeErroCRC(int quadro[]) throws ErroDeVerificacaoException {
 
     int totalBitsRecebidos = ManipulacaoBits.descobrirTotalDeBitsReais(quadro);// (incluindo o padding)
 
@@ -538,7 +559,7 @@ public class CamadaEnlaceDadosReceptora {
     int registradorCRC = VALOR_INICIAL;
 
     if (totalBitsRecebidos < 32) { // se tem menos de 32 bits, nao tem como ter CRC
-      return null; // quadro corrompido
+      throw new ErroDeVerificacaoException("QUADRO INVALIDO", "menos de 32 bits no quadro!");
     } // fim if
 
     int totalBitsReaisVerificar = totalBitsRecebidos - 32; // remove os bits de padding
@@ -577,9 +598,12 @@ public class CamadaEnlaceDadosReceptora {
     int crcCalculado = registradorCRC ^ VALOR_FINAL_XOR; // aplica o xor final
 
     if (crcRecebido != crcCalculado) { // se os crcs forem diferentes ocorreu erro
-      System.out.println("Erro de CRC! Recebido: " + Integer.toHexString(crcRecebido) +
-          ", Calculado: " + Integer.toHexString(crcCalculado));
-      return null; // Descarta o quadro
+      String msgErro = String.format(
+          "Erro de CRC-32!\n\nCRC Recebido: 0x%X\nCRC Calculado: 0x%X\n\nO quadro foi descartado.",
+          crcRecebido, crcCalculado);
+      System.out.println(msgErro);
+
+      throw new ErroDeVerificacaoException("FALHA DE CRC (CHECKSUM)", msgErro);
     }
 
     // se nao foi corrompido entao
@@ -668,13 +692,7 @@ public class CamadaEnlaceDadosReceptora {
           break;
         }
       }
-    }
-
-    /*
-     * if (posicaoErro > 0) { // existe erro
-     * return null;
-     * }
-     */
+    }// fim for 
 
     return quadroVerificado;
   }// fim do metodo CamadaEnlaceDadosReceptoraControleDeErroCodigoDeHamming

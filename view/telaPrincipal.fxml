@@ -5,7 +5,6 @@
 <?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -26,12 +25,12 @@
       </ImageView>
       <Pane layoutX="30.0" layoutY="147.0" prefHeight="318.0" prefWidth="226.0" style="-fx-background-color: #223A59;">
          <children>
-            <TextField fx:id="caixaTextoTransmitido" layoutX="5.0" layoutY="27.0" opacity="0.7" prefHeight="46.0" prefWidth="216.0" promptText="Digite sua mensage" />
             <Label layoutX="27.0" layoutY="2.0" prefHeight="25.0" prefWidth="172.0" text="Digite a mensagem:" textAlignment="CENTER" textFill="#cad8c6" wrapText="true">
                <font>
                   <Font name="Bell MT Bold" size="17.0" />
                </font>
             </Label>
+            <TextArea fx:id="caixaTextoTransmitido" layoutX="13.0" layoutY="27.0" opacity="0.7" prefHeight="43.0" prefWidth="200.0" promptText="Digite a mensagem ..." />
             <Label layoutX="27.0" layoutY="98.0" prefHeight="25.0" prefWidth="172.0" text="Mensagem binaria:" textAlignment="CENTER" textFill="#cad8c6" wrapText="true">
                <font>
                   <Font name="Bell MT Bold" size="15.0" />
@@ -62,12 +61,12 @@
             <Canvas fx:id="quadroAnimacaoTransmissao" height="102.0" layoutX="10.0" layoutY="-4.0" width="387.0" />
          </children>
       </Pane>
-      <Label layoutX="72.0" layoutY="121.0" text="TRANSMISSOR" textFill="#223a59">
+      <Label layoutX="57.0" layoutY="121.0" text="Host A (transmissor)" textFill="#223a59">
          <font>
             <Font name="Bell MT" size="20.0" />
          </font>
       </Label>
-      <Label layoutX="702.0" layoutY="121.0" text="RECEPTOR" textFill="#223a59">
+      <Label layoutX="685.0" layoutY="121.0" text="Host B (receptor)" textFill="#223a59">
          <font>
             <Font name="Bell MT" size="20.0" />
          </font>
@@ -79,12 +78,12 @@
       </Label>
       <Pane layoutX="643.0" layoutY="147.0" prefHeight="318.0" prefWidth="226.0" style="-fx-background-color: #223A59;">
          <children>
-            <TextField fx:id="caixaTextoRecebido" editable="false" layoutX="5.0" layoutY="27.0" opacity="0.7" prefHeight="46.0" prefWidth="216.0" promptText="Mensagem recebida" />
             <Label layoutX="27.0" layoutY="2.0" prefHeight="25.0" prefWidth="178.0" text="Mensagem recebida:" textAlignment="CENTER" textFill="#cad8c6" wrapText="true">
                <font>
                   <Font name="Bell MT Bold" size="17.0" />
                </font>
             </Label>
+            <TextArea fx:id="caixaTextoRecebido" layoutX="13.0" layoutY="27.0" opacity="0.7" prefHeight="46.0" prefWidth="200.0" promptText="Mensagem Recebida" />
             <Label layoutX="27.0" layoutY="98.0" prefHeight="25.0" prefWidth="172.0" text="Mensagem binaria:" textAlignment="CENTER" textFill="#cad8c6" wrapText="true">
                <font>
                   <Font name="Bell MT Bold" size="15.0" />

@@ -2,6 +2,7 @@ package controller;
 
 import model.AplicacaoReceptora;
 import model.MeioDeComunicacao;
+import util.ErroDeVerificacaoException;
 
 /**
  * Classe responsavel por gerenciar a comunicacao entre as camadas da rede
@@ -62,7 +63,7 @@ public class ControleRede {
 	 * 
 	 * @param mensagem mensagem as ser transmitida
 	 */
-	public void iniciarSimulacao(String mensagem) {
+	public void iniciarSimulacao(String mensagem) throws ErroDeVerificacaoException {
 		this.hostA.enviarMensagem(mensagem);
 	}// fim de iniciarSimulacao
 

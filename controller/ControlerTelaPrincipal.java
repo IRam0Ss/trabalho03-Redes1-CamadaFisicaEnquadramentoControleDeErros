@@ -1,6 +1,7 @@
 package controller;
 
 import javafx.animation.AnimationTimer;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
@@ -8,8 +9,8 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 /**
@@ -21,10 +22,10 @@ public class ControlerTelaPrincipal {
   private Button butaoTransmitir;
 
   @FXML
-  private TextField caixaTextoRecebido;
+  private TextArea caixaTextoRecebido;
 
   @FXML
-  private TextField caixaTextoTransmitido;
+  private TextArea caixaTextoTransmitido;
 
   @FXML
   private TextArea representMensagemBinariaRecebida;
@@ -113,15 +114,25 @@ public class ControlerTelaPrincipal {
    * @param pressionarBotaoTransmitir condicao de disparada do metodo,
    *                                  pressionar
    *                                  o botao transmitir!
+   * @throws ErroDeVerificacaoException trata erros de violacao de canais
    */
-  public void realizarSimulacaoTransmissao(ActionEvent pressionarBotaoTransmitir) {
+  public void realizarSimulacaoTransmissao(ActionEvent pressionarBotaoTransmitir) throws ErroDeVerificacaoException {
     if (!caixaTextoTransmitido.getText().isEmpty()) {
 
       String mensagem = getCaixaTextoTransmitido(); // coleta a mensagem digitada pelo usuario
 
-      limparInterface();
+      limparInterface(); // limpa a interface da simulacao passada
 
-      this.controleRede.iniciarSimulacao(mensagem); // inicia a simulacao de transmissao
+      // iniciar a simulacao em uma thread exclusiva, para evitar conflitos de
+      // animacao
+      new Thread(() -> {
+        try {
+          this.controleRede.iniciarSimulacao(mensagem);
+        } catch (ErroDeVerificacaoException e) {
+          e.printStackTrace();
+        } // inicia a simulacao de transmissao
+      }).start();
+
     } else {
       System.out.println("DIGITE UM TEXTO A SER TRANSMITIDO");
     }
@@ -189,7 +200,7 @@ public class ControlerTelaPrincipal {
     final double ALTURA_GRAFICO = quadroAnimacaoTransmissao.getHeight();
     final double NIVEL_ALTO_Y = ALTURA_GRAFICO * 0.25;
     final double NIVEL_BAIXO_Y = ALTURA_GRAFICO * 0.75;
-    final double VELOCIDADE_PX_POR_SEGUNDO = 50.0;
+    final double VELOCIDADE_PX_POR_SEGUNDO = 200.0;
 
     // calcular a largura total da onda em pixels
     final double LARGURA_TOTAL_DA_ONDA = fluxoBitsTransmitido.length * LARGURA_BIT;
@@ -394,10 +405,9 @@ public class ControlerTelaPrincipal {
    * @param mensagemRecebida a string que sera exibida
    */
   public void exibirMensagemRecebida(String mensagemRecebida) {
-
-    if (!caixaTextoRecebido.getText().equals(mensagemRecebida)) {
+    Platform.runLater(() -> {
       caixaTextoRecebido.appendText(mensagemRecebida);
-    }
+    });
 
   }// fim mensagem recebida
 
@@ -416,7 +426,9 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentMensagemBinariaTransmitida(int[] binarioMensagem) {
 
-    representMensagemBinariaTransmitida.setText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
+    Platform.runLater(() -> {
+      representMensagemBinariaTransmitida.setText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
+    });
 
   }// fim metodo
 
@@ -426,7 +438,9 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentMensagemBinariaRecebida(int[] binarioMensagem) {
 
-    representMensagemBinariaRecebida.appendText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
+    Platform.runLater(() -> {
+      representMensagemBinariaRecebida.appendText(ManipulacaoBits.exibirBitsStr(binarioMensagem));
+    });
 
   }// fim metodo
 
@@ -439,7 +453,9 @@ public class ControlerTelaPrincipal {
    */
   public void exibirRepresentSinalTransmitido(int[] representSinal) {
 
-    representSinalTransmitido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
+    Platform.runLater(() -> {
+      representSinalTransmitido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
+    });
 
   }// fim metodo
 
@@ -451,8 +467,9 @@ public class ControlerTelaPrincipal {
    *                       sinal
    */
   public void exibirRepresentSinalRecebido(int[] representSinal) {
-
-    representSinalRecebido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
+    Platform.runLater(() -> {
+      representSinalRecebido.appendText(ManipulacaoBits.exibirBitsStr(representSinal));
+    });
 
   }// fim metodo
 
