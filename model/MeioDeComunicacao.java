@@ -1,6 +1,8 @@
 package model;
 
 import controller.ControlerTelaPrincipal;
+import javafx.application.Platform;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 import java.util.Random;
 
@@ -63,15 +65,16 @@ public class MeioDeComunicacao {
    *                         pela camada anterior
    * @param remetente        que mandou a mensagem
    */
-  public void transmitirMensagem(int fluxoBrutoDeBits[], CamadaFisicaTransmissora remetente) {
+  public void transmitirMensagem(int fluxoBrutoDeBits[], CamadaFisicaTransmissora remetente)  throws ErroDeVerificacaoException{
 
     // transferir bits e aplicar erro
 
     double taxaErro = this.controlerTelaPrincipal.getValorTaxaErro();
 
     int[] fluxoBrutoDeBitsPontoInicial = fluxoBrutoDeBits;
-    int[] fluxoBrutoDeBitsPontoFinal = new int[fluxoBrutoDeBitsPontoInicial.length]; // array de destino tem o mesmo tamanho do
-                                                                           // array partida
+    int[] fluxoBrutoDeBitsPontoFinal = new int[fluxoBrutoDeBitsPontoInicial.length]; // array de destino tem o mesmo
+                                                                                     // tamanho do
+    // array partida
 
     int totalDeBits = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoInicial);
     int tipoDeEnquadramento = this.controlerTelaPrincipal.opcaoEnquadramentoSelecionada();
@@ -196,8 +199,12 @@ public class MeioDeComunicacao {
 
       // faz a animacao
       int totalBitsEnviados = ManipulacaoBits.descobrirTotalDeBitsReais(fluxoBrutoDeBitsPontoFinal);
-      this.controlerTelaPrincipal
-          .desenharSinalTransmissao(ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoFinal, totalBitsEnviados));
+      // gera o array simplificado para a animacao
+      final int[] bitsAnimacao = ManipulacaoBits.desempacotarBits(fluxoBrutoDeBitsPontoFinal, totalBitsEnviados);
+      // garante que a animacao seja sempre chamada pela thread de javaFX
+      Platform.runLater(() -> {
+        this.controlerTelaPrincipal.desenharSinalTransmissao(bitsAnimacao);
+      });
 
       // entrega a mensagem de A para B
       this.fisicaReceptoraHostB.receberQuadro(fluxoBrutoDeBitsPontoFinal);

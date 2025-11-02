@@ -1,5 +1,7 @@
 package model;
 
+import util.ErroDeVerificacaoException;
+
 /**
  * classe responsavel pela aplicacao do sistema que tranmite a mensagem
  */
@@ -22,7 +24,7 @@ public class AplicacaoTransmissora {
    * 
    * @param mensagem mensagem a ser transmitida
    */
-  public void iniciarTransmissao(String mensagem) {
+  public void iniciarTransmissao(String mensagem) throws ErroDeVerificacaoException{
 
     if (!mensagem.isEmpty() && mensagem != null) {
       this.camadaAplicacaoTransmissora.transmitirMensagem(mensagem); // envia a mensagem para a proxima camada

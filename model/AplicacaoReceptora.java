@@ -1,6 +1,7 @@
 package model;
 
 import controller.ControlerTelaPrincipal;
+import javafx.application.Platform;
 
 /**
  * classe que representa a aplicacao do sistema receptor
@@ -27,7 +28,9 @@ public class AplicacaoReceptora {
    */
   public void receberMensagem(String mensagem) {
     // exibe a mensagem recebida na interface grafica
-    this.controlerTelaPrincipal.exibirMensagemRecebida(mensagem);
+    Platform.runLater(() -> {
+      this.controlerTelaPrincipal.exibirMensagemRecebida(mensagem);
+    });
   } // fim do metodo receberMensagem
 
 } // fim da classe

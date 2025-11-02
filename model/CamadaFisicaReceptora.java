@@ -1,6 +1,10 @@
 package model;
 
 import controller.ControlerTelaPrincipal;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 /**
@@ -41,7 +45,7 @@ public class CamadaFisicaReceptora {
    * 
    * @param quadro representacaso em bits dos sinal transmitido
    */
-  public void receberQuadro(int[] quadro) {
+  public void receberQuadro(int[] quadro) throws ErroDeVerificacaoException {
 
     this.controlerTelaPrincipal.exibirRepresentSinalRecebido(quadro);
 
@@ -50,23 +54,38 @@ public class CamadaFisicaReceptora {
     int tipoDeDecodificacao = this.controlerTelaPrincipal.opcaoSelecionada();
     int fluxoBrutoDeBits[] = null;
 
-    if (tipoDeEnquadramento == 3) {
-      fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoComViolacao(quadro, tipoDeDecodificacao);
-    } else {
-      switch (tipoDeDecodificacao) {
-        case 0: // codificao binaria
-          fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoBinaria(quadro);
-          break;
-        case 1: // codificacao manchester
-          fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoManchester(quadro);
-          break;
-        case 2: // codificacao manchester diferencial
-          fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoManchesterDiferencial(quadro);
-          break;
-      }// fim do switch/case
-    } // fim if/else
-      // chama proxima camada
+    try {
+      if (tipoDeEnquadramento == 3) {
+        fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoComViolacao(quadro, tipoDeDecodificacao);
+      } else {
+        switch (tipoDeDecodificacao) {
+          case 0: // codificao binaria
+            fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoBinaria(quadro);
+            break;
+          case 1: // codificacao manchester
+            fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoManchester(quadro);
+            break;
+          case 2: // codificacao manchester diferencial
+            fluxoBrutoDeBits = CamadaFisicaReceptoraDecodificacaoManchesterDiferencial(quadro);
+            break;
+        }// fim do switch/case
+      } // fim if/else
+    } catch (ErroDeVerificacaoException e) {
+      // A decodificacao FALHOU! (Ex: Manchester invalido 00 ou 11)
+      System.out.println("Camada Fisica Receptora: ERRO DETECTADO. " + e.getTitulo());
 
+      // Informar o usuario com o Alerta personalizado
+      Platform.runLater(() -> {
+        Alert alert = new Alert(AlertType.ERROR); // ERRO, pois a fisica falhou
+        alert.setTitle("Deteccao de Erro");
+        alert.setHeaderText(e.getTitulo());
+        alert.setContentText(e.getMensagem());
+        alert.show();
+      });
+      return; // Descarta o quadro, nao envia para a camada de Enlace
+    }
+    
+    // chama proxima camada
     this.camadaEnlaceDadosReceptora.receberQuadro(fluxoBrutoDeBits);
   }// fim do metodo CamadaFisicaTransmissora
 
@@ -87,8 +106,10 @@ public class CamadaFisicaReceptora {
    * 
    * @param quadro array com bits codificados em manchester
    * @return array decodificado
+   * @throws ErroDeVerificacaoException trata erros de violacao dos pares de sinal
+   *                                    recebido
    */
-  public int[] CamadaFisicaReceptoraDecodificacaoManchester(int[] quadro) {
+  public int[] CamadaFisicaReceptoraDecodificacaoManchester(int[] quadro) throws ErroDeVerificacaoException {
 
     int totalBitsManchester = ManipulacaoBits.descobrirTotalDeBitsReais(quadro); // descobre quantos bits tem a mensagem
                                                                                  // recebida
@@ -113,12 +134,17 @@ public class CamadaFisicaReceptora {
       } else if (bit1 == 0 && bit2 == 1) {
         bitOriginal = 0;
       } else {
-        bitOriginal = 0;
+        // Par invalido (00 ou 11) detectado! Isso e um erro de codificacao fisica.
+        String parInvalido = "" + bit1 + bit2;
+        throw new ErroDeVerificacaoException("ERRO NA CAMADA FISICA (MANCHESTER)",
+            "Erro de decodificacao Manchester: O par de bits [" + parInvalido + "] e invalido.\n" +
+                "Esperava-se '01' ou '10'.\n\n" +
+                "Isto indica que um erro de 1 bit no canal corrompeu o sinal. O quadro sera descartado.");
       }
 
       int posicaoGlobalOriginal = i / 2; // mapea a posicao do fluxo manchester de volta na posicao original
       ManipulacaoBits.escreverBits(mensagemDecodificada, posicaoGlobalOriginal, bitOriginal, 1);
-      
+
     } // fim for
 
     return mensagemDecodificada;
@@ -192,8 +218,10 @@ public class CamadaFisicaReceptora {
    * @param quadro              O sinal bruto vindo do meio fisico.
    * @param tipoDeDecodificacao A decodificacao a ser utilizada.
    * @return O quadro de dados decodificado e desenquadrado.
+   * @throws ErroDeVerificacaoException controla os erros de sinais invalidos
    */
-  private int[] CamadaFisicaReceptoraDecodificacaoComViolacao(int[] quadro, int tipoDeDecodificacao) {
+  private int[] CamadaFisicaReceptoraDecodificacaoComViolacao(int[] quadro, int tipoDeDecodificacao)
+      throws ErroDeVerificacaoException {
 
     final int VIOLACAO = 0b1111;
     final int TAMANHO_VIOLACAO_BITS = 4;
@@ -242,7 +270,16 @@ public class CamadaFisicaReceptora {
       if (tipoDeDecodificacao == 1) { // Manchester
         if (bit1 == 1 && bit2 == 0) { // 10->1
           bitOriginal = 1;
-        }
+        } else if (bit1 == 0 && bit2 == 1) { // 01 -> 0
+          bitOriginal = 0;
+        } else {
+          String parInvalido = "" + bit1 + bit2;
+          throw new ErroDeVerificacaoException("ERRO NA CAMADA FISICA (MANCHESTER)",
+              "Erro de decodificacao Manchester: O par de bits [" + parInvalido
+                  + "] e invalido (detectado dentro do quadro de violacao).\n" +
+                  "O quadro sera descartado.");
+        } // fim if/else
+
       } else { // Manchester Diferencial
         if (bit1 == nivelAnterior) { // sem transicao -> 1
           bitOriginal = 1;
@@ -266,4 +303,9 @@ public class CamadaFisicaReceptora {
     return resultadoFinal;
 
   } // fim metodo CamadaFisicaReceptoraDecodificacaoComViolacao
+
+  public MeioDeComunicacao getMeio(){
+    return this.meioDeComunicacao;
+  }
+  
 }// fim da classe

@@ -4,6 +4,7 @@ import controller.ControlerTelaPrincipal;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 /**
@@ -15,6 +16,8 @@ public class CamadaFisicaTransmissora {
 
   private ControlerTelaPrincipal controleTelaPrincipal; // referencia para a interface grafica
   private MeioDeComunicacao meioDeComunicacao; // referencia para o meio de comunicacao
+
+  private CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora; // referencia a classe superior
 
   /**
    * contrutor da classe
@@ -40,13 +43,13 @@ public class CamadaFisicaTransmissora {
    * 
    * @param quadro o quadro de bits ja passado pela enlace
    */
-  public void transmitirQuadro(int quadro[]) {
+  public void transmitirQuadro(int quadro[]) throws ErroDeVerificacaoException {
     int tipoDeCodificacao = this.controleTelaPrincipal.opcaoSelecionada();
     int fluxoBrutoDeBits[] = null; // eh a representacao do sinal que sera enviado
 
     int tipoDeEnquadramento = this.controleTelaPrincipal.opcaoEnquadramentoSelecionada();
 
-    if (tipoDeCodificacao == 0 & tipoDeEnquadramento == 3) {
+    if (tipoDeCodificacao == 0 && tipoDeEnquadramento == 3) {
       Platform.runLater(() -> { // mostra visualmente o alerta de que a combinacao nao eh permitida
         Alert alert;
         alert = new Alert(AlertType.INFORMATION);
@@ -54,6 +57,12 @@ public class CamadaFisicaTransmissora {
         alert.setHeaderText("ERRO! COMBINACAO NAO PERMITIDA");
         alert.setContentText("Nao eh possivel utilizar codificacao binaria e violacao da camada fisica");
         alert.showAndWait();
+
+        // aborta a transmissao
+        if (this.camadaEnlaceDadosTransmissora != null) {
+          camadaEnlaceDadosTransmissora.abortarTranmissao();
+        } // fim if
+
       });
       return;
     } // fim do if
@@ -75,11 +84,13 @@ public class CamadaFisicaTransmissora {
           break;
       }// fim do switch/case
     }
-
-    this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoDeBits);
+    final int[] fluxoBrutoBitsExibir = fluxoBrutoDeBits;
+    Platform.runLater(() -> {
+      this.controleTelaPrincipal.exibirRepresentSinalTransmitido(fluxoBrutoBitsExibir);
+    });
 
     // ao transmitir, passa si mesma para que o meio saiba quem transmitiu
-    meioDeComunicacao.transmitirMensagem(fluxoBrutoDeBits, this); 
+    meioDeComunicacao.transmitirMensagem(fluxoBrutoDeBits, this);
   } // fim do construtor
 
   /**
@@ -309,8 +320,14 @@ public class CamadaFisicaTransmissora {
     return fluxoBrutoDeBitsFinal; // retorna o array perfeitamente ajustado
   }// fim metodo CamadaFisicaTransmissoraComViolacao
 
-  public ControlerTelaPrincipal getControleTelaPrincipal() {
-    return this.controleTelaPrincipal;
-  }
+  /**
+   * define qual a camda superior a essa, chamado pelo host para tratar possiveis
+   * transmissoes invalidas
+   * 
+   * @param camadaEnlaceDadosTransmissora a camada superior a atual
+   */
+  public void setCamadaEnlaceSuperior(CamadaEnlaceDadosTransmissora camadaEnlaceDadosTransmissora) {
+    this.camadaEnlaceDadosTransmissora = camadaEnlaceDadosTransmissora;
+  } // fim setCamadaEnlaceSuperior
 
 }// fim da classe

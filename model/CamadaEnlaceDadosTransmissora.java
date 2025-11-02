@@ -6,6 +6,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import controller.ControlerTelaPrincipal;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 /**
@@ -54,7 +55,7 @@ public class CamadaEnlaceDadosTransmissora {
    * 
    * @param quadro mensagem em bits recebida pela camada anterior
    */
-  public void transmitirQuadro(int[] quadro) {
+  public void transmitirQuadro(int[] quadro) throws ErroDeVerificacaoException {
 
     // debug
     System.out.println("Camada de Enlace TX: Recebi " + quadro.length + " inteiros para transmitir.");
@@ -101,7 +102,7 @@ public class CamadaEnlaceDadosTransmissora {
    * 
    * @param quadro
    */
-  public void transmitirACK(int[] quadro) {
+  public void transmitirACK(int[] quadro) throws ErroDeVerificacaoException {
     System.out.println("ENLACE DADOS TRANSMISSORA: enviando ACK");
 
     // trata Ack como um unico subquadro
@@ -143,11 +144,6 @@ public class CamadaEnlaceDadosTransmissora {
         break;
     }// fim do switch/case
 
-    // fazer aqui a mensagem unica ja enquadrada em um unico vetor(o
-    // quadroEnquadrado), se tornar um vetor de vetores, onde cada vetor corresponde
-    // a um quadro enquadrado
-    // int[][] quadrosEnquadrados = separarEmQuadros(quadroEnquadrado);
-
     return quadroEnquadrado; // retorna o quadro ja enquadrado
 
   }// fim do metodo CamadaEnlaceDadosTransmissoraEnquadramentos
@@ -181,7 +177,7 @@ public class CamadaEnlaceDadosTransmissora {
 
   }// fim do metodo CamadaEnlaceDadosTransmissoraControleDeErro
 
-  public void CamadaEnlaceDadosTransmissoraControleDeFluxo() {
+  public void CamadaEnlaceDadosTransmissoraControleDeFluxo() throws ErroDeVerificacaoException {
 
     enviarProximoDaFila();
 
@@ -192,7 +188,7 @@ public class CamadaEnlaceDadosTransmissora {
    * envia os quadros em ordem
    * Chamado pelo controle de Fluxo
    */
-  private synchronized void enviarProximoDaFila() {
+  private synchronized void enviarProximoDaFila() throws ErroDeVerificacaoException {
 
     if (estado.equals("PRONTO_PARA_ENVIAR") && !filaDeEnvio.isEmpty()) {
       // se tem quadros a serem enviados e a camada do transmissor ta pronta para
@@ -215,13 +211,17 @@ public class CamadaEnlaceDadosTransmissora {
    * tempo ate a chegada do ACk de confirmacao e chama tratarTimeOut caso o tempo
    * acabe
    */
-  private void iniciarTimer() {
+  private void iniciarTimer() throws ErroDeVerificacaoException{
     cancelarTimer(); // finaliza qualquer timerr anterior
     timer = new Timer(); // cria um timer
     timer.schedule(new TimerTask() {
       @Override
       public void run() { // cria a thread que vai controlar o tempo de espera para recebimento do ACK
-        tratarTimeOut(); // trata oque acontece quanmdo o tempo acabar
+        try {
+          tratarTimeOut();
+        } catch (ErroDeVerificacaoException e) {
+          e.printStackTrace();
+        } // trata oque acontece quanmdo o tempo acabar
       }
     }, TIMEOUT_MILISEGUNDOS);
   } // fim do iniciarTimer
@@ -240,7 +240,7 @@ public class CamadaEnlaceDadosTransmissora {
    * quando o tempo do timer acaba, ele reenvia o quadro pois o ack nao chegou e
    * reinicia um novo timer
    */
-  private synchronized void tratarTimeOut() {
+  private synchronized void tratarTimeOut() throws ErroDeVerificacaoException{
     if (!estado.equals("ESPERANDO_ACK")) {
       return; // se nao esta esperando o ACK entao nao faz nada, seguranca
     } // fim if
@@ -830,7 +830,7 @@ public class CamadaEnlaceDadosTransmissora {
    * metodo que garente que acks recebidos matarao o timer certo para nao entrar
    * em loop de reenvio constante
    */
-  public synchronized void receberAck() {
+  public synchronized void receberAck() throws ErroDeVerificacaoException{
     if (!estado.equals("ESPERANDO_ACK")) {
       System.out.println("Enlace TX: ACK inesperado recebido. Ignorando.");
       return;
@@ -844,6 +844,17 @@ public class CamadaEnlaceDadosTransmissora {
 
     CamadaEnlaceDadosTransmissoraControleDeFluxo(); // chama o controle de fluxo
 
-  }
+  }// fim do receberAck
+
+  /**
+   * metodo responsavel por abortar uma transmissao invalida
+   */
+  public synchronized void abortarTranmissao() {
+    System.out.println("PROBLEMA DETECTADO, ABORTANDO TRANSMISSAO!");
+    cancelarTimer();
+    filaDeEnvio.clear();
+    quadroEmEspera = null;
+    estado = "PRONTO_PARA_ENVIAR";
+  }// fim do abortarTransmissao
 
 } // fim da classe

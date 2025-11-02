@@ -1,6 +1,8 @@
 package model;
 
 import controller.ControlerTelaPrincipal;
+import javafx.application.Platform;
+import util.ErroDeVerificacaoException;
 import util.ManipulacaoBits;
 
 /**
@@ -30,9 +32,11 @@ public class CamadaAplicacaoTransmissora {
    * 
    * @param mensagem mensagem tranmitida
    */
-  public void transmitirMensagem(String mensagem) {
+  public void transmitirMensagem(String mensagem) throws ErroDeVerificacaoException{
     int[] quadro = ManipulacaoBits.stringParaIntAgrupado(mensagem); // converte a mensagem para array de int
-    this.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro);
+    Platform.runLater(() -> {
+      this.controlerTelaPrincipal.exibirRepresentMensagemBinariaTransmitida(quadro);
+    });
 
     if (mensagem.equals("ACK")) { // se a mensagem a ser transmitida for o ACK, chama o metodo proprio para ACK
       this.camadaEnlaceDadosTransmissora.transmitirACK(quadro);
